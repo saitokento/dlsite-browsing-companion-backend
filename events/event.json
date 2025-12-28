@@ -55,7 +55,7 @@
     },
     "path": "/prod/hello",
     "resourcePath": "/hello",
-    "httpMethod": "POST",
+    "httpMethod": "GET",
     "apiId": "1234567890",
     "protocol": "HTTP/1.1"
   }

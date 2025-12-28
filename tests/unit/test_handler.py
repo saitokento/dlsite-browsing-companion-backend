@@ -16,7 +16,7 @@ def apigw_event():
             "resourceId": "123456",
             "apiId": "1234567890",
             "resourcePath": "/{proxy+}",
-            "httpMethod": "POST",
+            "httpMethod": "GET",
             "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
             "accountId": "123456789012",
             "identity": {
@@ -56,7 +56,7 @@ def apigw_event():
             "Accept-Encoding": "gzip, deflate, sdch",
         },
         "pathParameters": {"proxy": "/examplepath"},
-        "httpMethod": "POST",
+        "httpMethod": "GET",
         "stageVariables": {"baz": "qux"},
         "path": "/examplepath",
     }
