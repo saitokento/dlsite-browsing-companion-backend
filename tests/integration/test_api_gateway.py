@@ -33,7 +33,7 @@ class TestApiGateway:
         api_outputs = [output for output in stack_outputs if output["OutputKey"] == "HelloWorldApi"]
 
         if not api_outputs:
-            raise KeyError(f"HelloWorldAPI not found in stack {stack_name}")
+            raise KeyError(f"HelloWorldApi not found in stack {stack_name}")
 
         return api_outputs[0]["OutputValue"]  # Extract url from stack outputs
 
