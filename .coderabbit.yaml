@@ -1,0 +1,6 @@
+language: ja-JP
+reviews:
+  poem: false
+code_generation:
+  docstrings:
+    language: ja-JP
