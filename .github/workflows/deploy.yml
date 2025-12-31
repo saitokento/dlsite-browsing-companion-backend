@@ -16,6 +16,8 @@ jobs:
         with:
           python-version-file: ".python-version"
       - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
       - uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::851307004996:role/Deploy-Workflow
