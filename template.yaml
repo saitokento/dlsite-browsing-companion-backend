@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   dlsite-browsing-companion-backend
@@ -25,6 +25,20 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+  CommentGenerationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: comment_generation/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+        - x86_64
+      Events:
+        CommentGeneration:
+          Type: Api
+          Properties:
+            Path: /comment
+            Method: post
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -39,3 +53,12 @@ Outputs:
   HelloWorldFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt HelloWorldFunctionRole.Arn
+  CommentGenerationApi:
+    Description: "API Gateway endpoint URL for Comment Generation function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/comment/"
+  CommentGenerationFunction:
+    Description: "Comment Generation Lambda Function ARN"
+    Value: !GetAtt CommentGenerationFunction.Arn
+  CommentGenerationFunctionIamRole:
+    Description: "IAM Role for Comment Generation function"
+    Value: !GetAtt CommentGenerationFunctionRole.Arn
