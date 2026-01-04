@@ -39,6 +39,7 @@ Resources:
           Properties:
             Path: /comment
             Method: post
+      Timeout: 30
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
