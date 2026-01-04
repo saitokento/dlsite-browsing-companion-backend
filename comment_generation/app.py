@@ -1,7 +1,30 @@
 import json
 from openai import OpenAI
+import boto3
+from botocore.exceptions import ClientError
 
-client = OpenAI()
+def get_openai_api_key():
+
+    secret_name = "prod/DBC/OpenAI"
+    region_name = "ap-northeast-1"
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        raise e
+
+    return get_secret_value_response['SecretString']
+
+OPENAI_API_KEY = get_openai_api_key()
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def lambda_handler(event, context):
     response = client.responses.create(
