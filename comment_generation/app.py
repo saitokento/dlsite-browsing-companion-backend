@@ -4,7 +4,6 @@ import boto3
 from botocore.exceptions import ClientError
 
 def get_openai_api_key():
-
     secret_name = "prod/DBC/OpenAI"
     region_name = "ap-northeast-1"
 
@@ -27,9 +26,13 @@ OPENAI_API_KEY = get_openai_api_key()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def lambda_handler(event, context):
+    body = json.loads(event.get('body', '{}'))
+    input = body.get('input', '')
+
     response = client.responses.create(
         model="gpt-5-nano",
-        input="Hello World"
+        input=input,
+        instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
     )
 
     return {
