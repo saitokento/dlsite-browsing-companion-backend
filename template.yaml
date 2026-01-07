@@ -9,6 +9,11 @@ Description: >
 Globals:
   Function:
     Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'OPTIONS,GET,POST'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
 
 Resources:
   HelloWorldFunction:
