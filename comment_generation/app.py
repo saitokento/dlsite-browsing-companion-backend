@@ -45,16 +45,39 @@ def lambda_handler(event, context):
     body = json.loads(event.get('body', '{}'))
     input = body.get('input', '')
 
-    response = client.responses.create(
-        model="gpt-5-nano",
-        input=input,
-        instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
-    )
+    if not input or not input.strip():
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "Input is required"}),
+        }
+
+    try:
+        response = client.responses.create(
+            model="gpt-5-nano",
+            input=input,
+            instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
+        )
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "headers": headers,
+            "body": json.dumps({"error": f"OpenAI API error: {str(e)}"}),
+        }
+    
+    output_text = getattr(response, 'output_text', None)
+    if output_text is None:
+        return {
+            "statusCode": 500,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid response from OpenAI API"}),
+        }
 
     return {
         "statusCode": 200,
         "headers": headers,
         "body": json.dumps({
-            "output_text": response.output_text,
+            "output_text": output_text,
         }),
     }
