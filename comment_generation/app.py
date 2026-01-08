@@ -17,8 +17,8 @@ def get_openai_api_key():
         get_secret_value_response = client.get_secret_value(
             SecretId=secret_name
         )
-    except ClientError as e:
-        raise e
+    except ClientError:
+        raise
 
     return get_secret_value_response['SecretString']
 
