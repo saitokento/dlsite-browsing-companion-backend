@@ -20,7 +20,12 @@ def get_openai_api_key():
     except ClientError:
         raise
 
-    return get_secret_value_response['SecretString']
+    secret_string = get_secret_value_response['SecretString']
+    try:
+        secret_json = json.loads(secret_string)
+        return secret_json.get('OPENAI_API_KEY')
+    except json.JSONDecodeError:
+        return secret_string
 
 OPENAI_API_KEY = get_openai_api_key()
 client = OpenAI(api_key=OPENAI_API_KEY)
