@@ -13,12 +13,9 @@ def get_openai_api_key():
         region_name=region_name
     )
 
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError:
-        raise
+    get_secret_value_response = client.get_secret_value(
+        SecretId=secret_name
+    )
 
     secret_string = get_secret_value_response['SecretString']
     try:
