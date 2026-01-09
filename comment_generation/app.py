@@ -39,6 +39,15 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": headers, "body": ""}
     
+    try:
+        body = json.loads(event.get('body', '{}'))
+    except json.JSONDecodeError as e:
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "Invalid JSON format"}),
+        }
+    
     body = json.loads(event.get('body', '{}'))
     input = body.get('input', '')
 
