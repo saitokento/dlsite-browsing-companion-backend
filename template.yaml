@@ -45,6 +45,9 @@ Resources:
             Path: /comment
             Method: post
       Timeout: 30
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:prod/DBC/OpenAI-*"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
