@@ -48,7 +48,6 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Invalid JSON format"}),
         }
     
-    body = json.loads(event.get('body', '{}'))
     input = body.get('input', '')
 
     if not input or not input.strip():
