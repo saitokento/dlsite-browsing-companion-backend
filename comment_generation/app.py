@@ -13,9 +13,12 @@ def get_openai_api_key():
         region_name=region_name
     )
 
-    get_secret_value_response = client.get_secret_value(
-        SecretId=secret_name
-    )
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        raise RuntimeError(f"Failed to retrieve secret from Secrets Manager: {e}") from e
 
     secret_string = get_secret_value_response['SecretString']
     try:
