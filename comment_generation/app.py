@@ -23,7 +23,10 @@ def get_openai_api_key():
     secret_string = get_secret_value_response['SecretString']
     try:
         secret_json = json.loads(secret_string)
-        return secret_json.get('OPENAI_API_KEY')
+        api_key = secret_json.get('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in secret")
+        return api_key
     except json.JSONDecodeError:
         return secret_string
 
