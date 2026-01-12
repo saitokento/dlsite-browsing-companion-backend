@@ -48,19 +48,19 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Invalid JSON format"}),
         }
     
-    input = body.get('input', '')
+    prompt = body.get('input', '')
 
-    if not input or not input.strip():
+    if not prompt or not prompt.strip():
         return {
             "statusCode": 400,
             "headers": headers,
-            "body": json.dumps({"error": "Input is required"}),
+            "body": json.dumps({"error": "Prompt is required"}),
         }
 
     try:
         response = client.responses.create(
             model="gpt-5-nano",
-            input=input,
+            input=prompt,
             instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
         )
 
