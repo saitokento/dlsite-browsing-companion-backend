@@ -48,7 +48,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 def lambda_handler(event, context):
     """
-    API Gateway からのリクエストを受け取り、OpenAI へプロンプトを渡して生成結果を返す AWS Lambda ハンドラ。
+    API Gateway からのリクエストを受け取り、OpenAI API へプロンプトを渡して生成結果を返す AWS Lambda ハンドラ。
     
     リクエストの body に JSON で含まれる "input" をプロンプトとして使用し、OpenAI のレスポンスから output_text を抽出して HTTP レスポンス形式の辞書を返します。OPTIONS のプリフライトには CORS ヘッダ付きで 200 を返します。入力が不正な JSON か、"input" が空白のみの場合は 400、OpenAI API 呼び出しエラーや期待する出力が得られない場合は 500 を返します。
     
