@@ -72,10 +72,11 @@ def lambda_handler(event, context):
         )
 
     except (APIError, APIConnectionError, RateLimitError) as e:
+        print(f"OpenAI API error: {e}")
         return {
             "statusCode": 500,
             "headers": headers,
-            "body": json.dumps({"error": f"OpenAI API error: {e!s}"}),
+            "body": json.dumps({"error": "OpenAI API error occurred"}),
         }
     
     output_text = getattr(response, 'output_text', None)
