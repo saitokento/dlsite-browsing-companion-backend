@@ -2,6 +2,7 @@ import json
 from openai import OpenAI
 import boto3
 from botocore.exceptions import ClientError
+from openai import APIError, APIConnectionError, RateLimitError
 
 def get_openai_api_key():
     secret_name = "prod/DBC/OpenAI"
@@ -70,11 +71,11 @@ def lambda_handler(event, context):
             instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
         )
 
-    except Exception as e:
+    except (APIError, APIConnectionError, RateLimitError) as e:
         return {
             "statusCode": 500,
             "headers": headers,
-            "body": json.dumps({"error": f"OpenAI API error: {str(e)}"}),
+            "body": json.dumps({"error": f"OpenAI API error: {e!s}"}),
         }
     
     output_text = getattr(response, 'output_text', None)
