@@ -47,7 +47,7 @@ def lambda_handler(event, context):
     
     try:
         body = json.loads(event.get('body', '{}'))
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         return {
             "statusCode": 400,
             "headers": headers,
