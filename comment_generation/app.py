@@ -4,20 +4,20 @@ import boto3
 from botocore.exceptions import ClientError
 from openai import APIError, APIConnectionError, RateLimitError
 
-def get_openai_api_key():
+def get_api_keys():
     """
-    AWS Secrets Manager から OpenAI の API キーを取得する。
+    AWS Secrets Manager から OpenAI, xAI の API キーを取得する。
     
-    Secrets Manager のシークレット "prod/DBC/OpenAI"（リージョン ap-northeast-1）を読み取り、シークレット文字列を JSON として解析してキー "OPENAI_API_KEY" の値を返す。シークレットが有効な JSON でない場合は、パースせずにシークレット文字列をそのまま返す。
+    Secrets Manager のシークレット "prod/DBC/APIKeys"（リージョン ap-northeast-1）を読み取り、シークレット文字列を JSON として解析してキー "OPENAI_API_KEY", "XAI_API_KEY" の値を返す。シークレットが有効な JSON でない場合は、パースせずにシークレット文字列をそのまま返す。
     
     Returns:
-        api_key (str): OPENAI_API_KEY の値（JSON 内に存在する場合）。シークレットが JSON でない場合はシークレット文字列そのもの。
+        openai_api_key, xai_api_key (str[]): OPENAI_API_KEY, XAI_API_KEY の値（JSON 内に存在する場合）。シークレットが JSON でない場合はシークレット文字列そのもの。
     
     Raises:
         RuntimeError: Secrets Manager からの取得に失敗した場合。
-        ValueError: シークレットが JSON でパースでき、かつ OPENAI_API_KEY が含まれていない場合。
+        ValueError: シークレットが JSON でパースでき、かつ OPENAI_API_KEY か XAI_API_KEY が含まれていない場合。
     """
-    secret_name = "prod/DBC/OpenAI"
+    secret_name = "prod/DBC/APIKeys"
     region_name = "ap-northeast-1"
 
     session = boto3.session.Session()
@@ -36,14 +36,17 @@ def get_openai_api_key():
     secret_string = get_secret_value_response['SecretString']
     try:
         secret_json = json.loads(secret_string)
-        api_key = secret_json.get('OPENAI_API_KEY')
-        if not api_key:
+        openai_api_key = secret_json.get('OPENAI_API_KEY')
+        if not openai_api_key:
             raise ValueError("OPENAI_API_KEY not found in secret")
-        return api_key
+        xai_api_key = secret_json.get('XAI_API_KEY')
+        if not xai_api_key:
+            raise ValueError("XAI_API_KEY not found in secret")
+        return openai_api_key, xai_api_key
     except json.JSONDecodeError:
         return secret_string
 
-OPENAI_API_KEY = get_openai_api_key()
+OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def lambda_handler(event, context):
