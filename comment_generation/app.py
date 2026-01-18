@@ -3,6 +3,8 @@ from openai import OpenAI
 import boto3
 from botocore.exceptions import ClientError
 from openai import APIError, APIConnectionError, RateLimitError
+from xai_sdk import Client
+from xai_sdk.chat import user, system
 
 def get_api_keys():
     """
@@ -48,6 +50,9 @@ def get_api_keys():
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
+xai_client = Client(
+    api_key=XAI_API_KEY
+)
 
 def lambda_handler(event, context):
     """
@@ -94,12 +99,16 @@ def lambda_handler(event, context):
         }
 
     try:
-        response = openai_client.responses.create(
-            model="gpt-5-nano",
-            input=prompt,
-            instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
-        )
-
+        # response = openai_client.responses.create(
+        #     model="gpt-5-nano",
+        #     input=prompt,
+        #     instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
+        # )
+        # output_text = getattr(response, 'output_text', None)
+        chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
+        chat.append(system("あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています"))
+        chat.append(user(prompt))
+        output_text = chat.sample().content
     except (APIError, APIConnectionError, RateLimitError) as e:
         print(f"OpenAI API error: {e}")
         return {
@@ -108,7 +117,6 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "OpenAI API error occurred"}),
         }
     
-    output_text = getattr(response, 'output_text', None)
     if output_text is None:
         return {
             "statusCode": 500,
