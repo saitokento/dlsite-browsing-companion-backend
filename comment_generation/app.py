@@ -47,7 +47,7 @@ def get_api_keys():
         return secret_string
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
-client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 def lambda_handler(event, context):
     """
@@ -94,7 +94,7 @@ def lambda_handler(event, context):
         }
 
     try:
-        response = client.responses.create(
+        response = openai_client.responses.create(
             model="gpt-5-nano",
             input=prompt,
             instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
