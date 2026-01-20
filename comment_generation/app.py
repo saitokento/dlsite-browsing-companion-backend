@@ -137,7 +137,14 @@ def lambda_handler(event, context):
         }
     
     instruction = body.get('instruction', '')
-    api = body.get('api', '')
+    api = body.get('api', 'xai')
+
+    if api not in ('openai', 'xai'):
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "api must be 'openai' or 'xai'"}),
+        }
 
     output_text = generate_comment(prompt, instruction, api, headers)
     
