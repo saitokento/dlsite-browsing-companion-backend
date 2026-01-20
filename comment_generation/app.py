@@ -114,6 +114,14 @@ def generate_comment(prompt: str, instruction: str, api: str):
                 output_text = call_xai_api(prompt, instruction)
             except grpc.RpcError as e2:
                 print(f"xAI API also failed: {e2}")
+        else:
+            if not output_text:
+                print("OpenAI returned empty output, falling back to xAI")
+                try:
+                    output_text = call_xai_api(prompt, instruction)
+                except grpc.RpcError as e2:
+                    print(f"xAI API also failed: {e2}")
+
     else: 
         try:
             output_text = call_xai_api(prompt, instruction)
@@ -123,6 +131,13 @@ def generate_comment(prompt: str, instruction: str, api: str):
                 output_text = call_openai_api(prompt, instruction)
             except (APIError, APIConnectionError, RateLimitError) as e2:
                 print(f"OpenAI API also failed: {e2}")
+        else:
+            if not output_text:
+                print("xAI returned empty output, falling back to OpenAI")
+                try:
+                    output_text = call_openai_api(prompt, instruction)
+                except (APIError, APIConnectionError, RateLimitError) as e2:
+                    print(f"OpenAI API also failed: {e2}")
     
     return output_text
 
