@@ -3,21 +3,24 @@ from openai import OpenAI
 import boto3
 from botocore.exceptions import ClientError
 from openai import APIError, APIConnectionError, RateLimitError
+from xai_sdk import Client
+from xai_sdk.chat import user, system
+import grpc
 
-def get_openai_api_key():
+def get_api_keys():
     """
-    AWS Secrets Manager から OpenAI の API キーを取得する。
+    AWS Secrets Manager から OpenAI と xAI の API キーを取得する。
     
-    Secrets Manager のシークレット "prod/DBC/OpenAI"（リージョン ap-northeast-1）を読み取り、シークレット文字列を JSON として解析してキー "OPENAI_API_KEY" の値を返す。シークレットが有効な JSON でない場合は、パースせずにシークレット文字列をそのまま返す。
+    指定されたシークレット "prod/DBC/APIKeys" (リージョン ap-northeast-1) を読み取り、シークレット文字列を JSON として解析して `OPENAI_API_KEY` と `XAI_API_KEY` を返す。
     
     Returns:
-        api_key (str): OPENAI_API_KEY の値（JSON 内に存在する場合）。シークレットが JSON でない場合はシークレット文字列そのもの。
+        (tuple[str, str]): `OPENAI_API_KEY` と `XAI_API_KEY` の値。
     
     Raises:
         RuntimeError: Secrets Manager からの取得に失敗した場合。
-        ValueError: シークレットが JSON でパースでき、かつ OPENAI_API_KEY が含まれていない場合。
+        ValueError: シークレットが有効な JSON でない場合、または JSON に `OPENAI_API_KEY` または `XAI_API_KEY` が含まれていない場合。
     """
-    secret_name = "prod/DBC/OpenAI"
+    secret_name = "prod/DBC/APIKeys"
     region_name = "ap-northeast-1"
 
     session = boto3.session.Session()
@@ -36,30 +39,123 @@ def get_openai_api_key():
     secret_string = get_secret_value_response['SecretString']
     try:
         secret_json = json.loads(secret_string)
-        api_key = secret_json.get('OPENAI_API_KEY')
-        if not api_key:
+        openai_api_key = secret_json.get('OPENAI_API_KEY')
+        if not openai_api_key:
             raise ValueError("OPENAI_API_KEY not found in secret")
-        return api_key
-    except json.JSONDecodeError:
-        return secret_string
+        xai_api_key = secret_json.get('XAI_API_KEY')
+        if not xai_api_key:
+            raise ValueError("XAI_API_KEY not found in secret")
+        return openai_api_key, xai_api_key
+    except json.JSONDecodeError as e:
+        raise ValueError("Secret must be JSON with OPENAI_API_KEY and XAI_API_KEY") from e
 
-OPENAI_API_KEY = get_openai_api_key()
-client = OpenAI(api_key=OPENAI_API_KEY)
+OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+xai_client = Client(
+    api_key=XAI_API_KEY
+)
+
+def call_openai_api(prompt: str, instruction: str):
+    """
+    OpenAI Responses API にプロンプトと指示を渡して生成結果の本文を取得する。
+    
+    Parameters:
+    	prompt (str): 生成のためのユーザー入力プロンプト。
+    	instruction (str): モデルへの追加指示や制約を表すテキスト。
+    
+    Returns:
+    	output_text (str | None): 生成された本文文字列。レスポンスに本文が含まれない場合は`None`を返す。
+    """
+    response = openai_client.responses.create(
+        model="gpt-5-nano",
+        input=prompt,
+        instructions=instruction
+    )
+    return getattr(response, 'output_text', None)
+
+def call_xai_api(prompt: str, instruction: str):
+    """
+    xAI API にプロンプトとシステム指示を渡して生成されたテキストを取得する。
+    
+    Parameters:
+    	prompt (str): ユーザーとしてモデルに渡す入力テキスト。
+    	instruction (str): システムロールとしてモデルに与える指示文。
+    
+    Returns:
+    	str: モデルが生成した応答テキスト。
+    """
+    chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
+    chat.append(system(instruction))
+    chat.append(user(prompt))
+    return chat.sample().content
+
+def generate_comment(prompt: str, instruction: str, api: str):
+    """
+    指定されたバックエンドでモデル生成を試み、失敗した場合はもう一方のバックエンドへフォールバックして生成結果を返す。
+    
+    指定した `api` を優先して呼び出し、優先バックエンドが失敗した場合は代替バックエンドを試行する。どちらのバックエンドでも生成に失敗した場合は `None` を返す。
+    
+    Parameters:
+        prompt (str): 生成に用いるユーザ入力のプロンプト。
+        instruction (str): モデルへの追加指示（任意の補助テキスト）。
+        api (str): 優先的に使用するバックエンド。'openai' または 'xai' のいずれかを指定する。
+    
+    Returns:
+        output_text (str | None): 生成されたテキスト。生成に成功しなければ `None`。
+    """
+    output_text = None
+    
+    if api == 'openai':
+        try:
+            output_text = call_openai_api(prompt, instruction)
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            print(f"OpenAI API failed: {e}, falling back to xAI")
+            try:
+                output_text = call_xai_api(prompt, instruction)
+            except grpc.RpcError as e2:
+                print(f"xAI API also failed: {e2}")
+        else:
+            if not output_text:
+                print("OpenAI returned empty output, falling back to xAI")
+                try:
+                    output_text = call_xai_api(prompt, instruction)
+                except grpc.RpcError as e2:
+                    print(f"xAI API also failed: {e2}")
+
+    else: 
+        try:
+            output_text = call_xai_api(prompt, instruction)
+        except grpc.RpcError as e:
+            print(f"xAI API failed: {e}, falling back to OpenAI")
+            try:
+                output_text = call_openai_api(prompt, instruction)
+            except (APIError, APIConnectionError, RateLimitError) as e2:
+                print(f"OpenAI API also failed: {e2}")
+        else:
+            if not output_text:
+                print("xAI returned empty output, falling back to OpenAI")
+                try:
+                    output_text = call_openai_api(prompt, instruction)
+                except (APIError, APIConnectionError, RateLimitError) as e2:
+                    print(f"OpenAI API also failed: {e2}")
+    
+    return output_text
 
 def lambda_handler(event, context):
     """
-    API Gateway からのリクエストを受け取り、OpenAI API へプロンプトを渡して生成結果を返す AWS Lambda ハンドラ。
+    API Gateway からのリクエストを受け取り、指定されたバックエンド（OpenAI または xAI）でプロンプトを生成して HTTP レスポンス辞書を返す AWS Lambda ハンドラ。
     
-    リクエストの body に JSON で含まれる "input" をプロンプトとして使用し、OpenAI のレスポンスから output_text を抽出して HTTP レスポンス形式の辞書を返します。OPTIONS のプリフライトには CORS ヘッダ付きで 200 を返します。入力が不正な JSON か、"input" が空白のみの場合は 400、OpenAI API 呼び出しエラーや期待する出力が得られない場合は 500 を返します。
+    リクエスト本文（event["body"]）は JSON で、必須の "input" にプロンプト文字列を含む。任意で "instruction"（追加指示）と "api"（'openai' または 'xai'、デフォルト 'xai'）を指定できる。OPTIONS のプリフライトには CORS ヘッダ付きで 200 を返す。入力が不正な JSON、"input" が空白のみ、または "api" が不正な値の場合は 400 を返す。生成に失敗した場合は 500 を返す。
     
     Parameters:
-        event (dict): API Gateway 互換イベント。`event["body"]` は JSON 文字列であり、そこに `"input"` キーでプロンプトを含める必要があります。
+        event (dict): API Gateway 互換イベント。`event["body"]` に JSON 文字列でリクエストデータを含む。
         context: Lambda 実行コンテキスト（未使用）。
     
     Returns:
-        dict: API Gateway が期待する形式の HTTP レスポンス辞書。成功時は statusCode 200 と
-        {"output_text": <string>} を body に持つ JSON を返します。エラー時は適切な statusCode と
-        {"error": "<message>"} を body に持つ JSON を返します。
+        dict: API Gateway 互換の HTTP レスポンス辞書。
+          - 成功: statusCode 200、body に JSON 文字列 {"output_text": "<生成結果>"}。
+          - クライアントエラー: statusCode 400、body に {"error": "<メッセージ>"}。
+          - サーバーエラー: statusCode 500、body に {"error": "<メッセージ>"}。
     """
     headers = {
         "Access-Control-Allow-Origin": "*",
@@ -89,28 +185,24 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Prompt is required"}),
         }
-
-    try:
-        response = client.responses.create(
-            model="gpt-5-nano",
-            input=prompt,
-            instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
-        )
-
-    except (APIError, APIConnectionError, RateLimitError) as e:
-        print(f"OpenAI API error: {e}")
-        return {
-            "statusCode": 500,
-            "headers": headers,
-            "body": json.dumps({"error": "OpenAI API error occurred"}),
-        }
     
-    output_text = getattr(response, 'output_text', None)
+    instruction = body.get('instruction', '')
+    api = (body.get('api') or 'xai').strip().lower()
+
+    if api not in ('openai', 'xai'):
+        return {
+            "statusCode": 400,
+            "headers": headers,
+            "body": json.dumps({"error": "api must be 'openai' or 'xai'"}),
+        }
+
+    output_text = generate_comment(prompt, instruction, api)
+    
     if output_text is None:
         return {
             "statusCode": 500,
             "headers": headers,
-            "body": json.dumps({"error": "Invalid response from OpenAI API"}),
+            "body": json.dumps({"error": "Comment generation failed"}),
         }
 
     return {
