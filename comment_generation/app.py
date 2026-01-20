@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 from openai import APIError, APIConnectionError, RateLimitError
 from xai_sdk import Client
 from xai_sdk.chat import user, system
+import grpc
 
 def get_api_keys():
     """
@@ -78,12 +79,12 @@ def generate_comment(prompt: str, instruction: str, api: str, headers: str):
             print(f"OpenAI API failed: {e}, falling back to xAI")
             try:
                 output_text = call_xai_api(prompt, instruction)
-            except Exception as e2:
+            except grpc.RpcError as e2:
                 print(f"xAI API also failed: {e2}")
     else: 
         try:
             output_text = call_xai_api(prompt, instruction)
-        except Exception as e:
+        except grpc.RpcError as e:
             print(f"xAI API failed: {e}, falling back to OpenAI")
             try:
                 output_text = call_openai_api(prompt, instruction)
