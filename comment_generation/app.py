@@ -69,7 +69,7 @@ def call_xai_api(prompt: str, instruction: str):
     chat.append(user(prompt))
     return chat.sample().content
 
-def generate_comment(prompt: str, instruction: str, api: str, headers: str):
+def generate_comment(prompt: str, instruction: str, api: str):
     output_text = None
     
     if api == 'openai':
@@ -147,7 +147,7 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "api must be 'openai' or 'xai'"}),
         }
 
-    output_text = generate_comment(prompt, instruction, api, headers)
+    output_text = generate_comment(prompt, instruction, api)
     
     if output_text is None:
         return {
