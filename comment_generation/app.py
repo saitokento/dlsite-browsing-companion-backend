@@ -172,7 +172,7 @@ def lambda_handler(event, context):
         }
     
     instruction = body.get('instruction', '')
-    api = body.get('api', 'xai')
+    api = (body.get('api') or 'xai').strip().lower()
 
     if api not in ('openai', 'xai'):
         return {
