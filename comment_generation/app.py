@@ -45,8 +45,8 @@ def get_api_keys():
         if not xai_api_key:
             raise ValueError("XAI_API_KEY not found in secret")
         return openai_api_key, xai_api_key
-    except json.JSONDecodeError:
-        return secret_string, secret_string
+    except json.JSONDecodeError as e:
+        raise ValueError("Secret must be JSON with OPENAI_API_KEY and XAI_API_KEY") from e
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
