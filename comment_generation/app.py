@@ -11,7 +11,7 @@ def get_api_keys():
     """
     AWS Secrets Manager から OpenAI と xAI の API キーを取得する。
     
-    指定されたシークレット "prod/DBC/APIKeys"（リージョン ap-northeast-1）を読み取り、シークレット文字列を JSON として解析して `OPENAI_API_KEY` と `XAI_API_KEY` を返す。
+    指定されたシークレット "prod/DBC/APIKeys" (リージョン ap-northeast-1) を読み取り、シークレット文字列を JSON として解析して `OPENAI_API_KEY` と `XAI_API_KEY` を返す。
     
     Returns:
         (tuple[str, str]): `OPENAI_API_KEY` と `XAI_API_KEY` の値。
@@ -57,7 +57,7 @@ xai_client = Client(
 
 def call_openai_api(prompt: str, instruction: str):
     """
-    OpenAIのテキスト生成APIにプロンプトと指示を渡して生成結果の本文を取得する。
+    OpenAI Responses API にプロンプトと指示を渡して生成結果の本文を取得する。
     
     Parameters:
     	prompt (str): 生成のためのユーザー入力プロンプト。
@@ -75,7 +75,7 @@ def call_openai_api(prompt: str, instruction: str):
 
 def call_xai_api(prompt: str, instruction: str):
     """
-    xAIチャットモデルにプロンプトとシステム指示を渡して生成されたテキストを取得する。
+    xAI API にプロンプトとシステム指示を渡して生成されたテキストを取得する。
     
     Parameters:
     	prompt (str): ユーザーとしてモデルに渡す入力テキスト。
@@ -93,7 +93,7 @@ def generate_comment(prompt: str, instruction: str, api: str):
     """
     指定されたバックエンドでモデル生成を試み、失敗した場合はもう一方のバックエンドへフォールバックして生成結果を返す。
     
-    指定した `api` を優先して呼び出し、優先バックエンドが失敗した場合は代替バックエンドを試行します。どちらのバックエンドでも生成に失敗した場合は `None` を返します。
+    指定した `api` を優先して呼び出し、優先バックエンドが失敗した場合は代替バックエンドを試行する。どちらのバックエンドでも生成に失敗した場合は `None` を返す。
     
     Parameters:
         prompt (str): 生成に用いるユーザ入力のプロンプト。
@@ -130,7 +130,7 @@ def lambda_handler(event, context):
     """
     API Gateway からのリクエストを受け取り、指定されたバックエンド（OpenAI または xAI）でプロンプトを生成して HTTP レスポンス辞書を返す AWS Lambda ハンドラ。
     
-    リクエスト本文（event["body"]）は JSON で、必須の "input" にプロンプト文字列を含めます。任意で "instruction"（追加指示）と "api"（'openai' または 'xai'、デフォルト 'xai'）を指定できます。OPTIONS のプリフライトには CORS ヘッダ付きで 200 を返します。入力が不正な JSON、"input" が空白のみ、または "api" が不正な値の場合は 400 を返します。生成に失敗した場合は 500 を返します。
+    リクエスト本文（event["body"]）は JSON で、必須の "input" にプロンプト文字列を含む。任意で "instruction"（追加指示）と "api"（'openai' または 'xai'、デフォルト 'xai'）を指定できる。OPTIONS のプリフライトには CORS ヘッダ付きで 200 を返す。入力が不正な JSON、"input" が空白のみ、または "api" が不正な値の場合は 400 を返す。生成に失敗した場合は 500 を返す。
     
     Parameters:
         event (dict): API Gateway 互換イベント。`event["body"]` に JSON 文字列でリクエストデータを含む。
