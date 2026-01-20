@@ -54,6 +54,44 @@ xai_client = Client(
     api_key=XAI_API_KEY
 )
 
+def call_openai_api(prompt: str, instruction: str):
+    response = openai_client.responses.create(
+        model="gpt-5-nano",
+        input=prompt,
+        instructions=instruction
+    )
+    return getattr(response, 'output_text', None)
+
+def call_xai_api(prompt: str, instruction: str):
+    chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
+    chat.append(system(instruction))
+    chat.append(user(prompt))
+    return chat.sample().content
+
+def generate_comment(prompt: str, instruction: str, api: str, headers: str):
+    output_text = None
+    
+    if api == 'openai':
+        try:
+            output_text = call_openai_api(prompt, instruction)
+        except (APIError, APIConnectionError, RateLimitError) as e:
+            print(f"OpenAI API failed: {e}, falling back to xAI")
+            try:
+                output_text = call_xai_api(prompt, instruction)
+            except Exception as e2:
+                print(f"xAI API also failed: {e2}")
+    else: 
+        try:
+            output_text = call_xai_api(prompt, instruction)
+        except Exception as e:
+            print(f"xAI API failed: {e}, falling back to OpenAI")
+            try:
+                output_text = call_openai_api(prompt, instruction)
+            except (APIError, APIConnectionError, RateLimitError) as e2:
+                print(f"OpenAI API also failed: {e2}")
+    
+    return output_text
+
 def lambda_handler(event, context):
     """
     API Gateway からのリクエストを受け取り、OpenAI API へプロンプトを渡して生成結果を返す AWS Lambda ハンドラ。
@@ -101,30 +139,13 @@ def lambda_handler(event, context):
     instruction = body.get('instruction', '')
     api = body.get('api', '')
 
-    try:
-        # response = openai_client.responses.create(
-        #     model="gpt-5-nano",
-        #     input=prompt,
-        #     instructions="あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
-        # )
-        # output_text = getattr(response, 'output_text', None)
-        chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
-        chat.append(system("あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています"))
-        chat.append(user(prompt))
-        output_text = chat.sample().content
-    except (APIError, APIConnectionError, RateLimitError) as e:
-        print(f"OpenAI API error: {e}")
-        return {
-            "statusCode": 500,
-            "headers": headers,
-            "body": json.dumps({"error": "OpenAI API error occurred"}),
-        }
+    output_text = generate_comment(prompt, instruction, api, headers)
     
     if output_text is None:
         return {
             "statusCode": 500,
             "headers": headers,
-            "body": json.dumps({"error": "Invalid response from OpenAI API"}),
+            "body": json.dumps({"error": "Comment generation failed"}),
         }
 
     return {
