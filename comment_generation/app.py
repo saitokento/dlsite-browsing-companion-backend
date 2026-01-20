@@ -97,6 +97,9 @@ def lambda_handler(event, context):
             "headers": headers,
             "body": json.dumps({"error": "Prompt is required"}),
         }
+    
+    instruction = body.get('instruction', '')
+    api = body.get('api', '')
 
     try:
         # response = openai_client.responses.create(
