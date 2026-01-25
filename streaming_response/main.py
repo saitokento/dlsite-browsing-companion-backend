@@ -7,7 +7,7 @@ from strands import Agent
 app = FastAPI()
 
 strands_agent = Agent(
-    model="us.amazon.nova-lite-v1:0",
+    model="amazon.nova-lite-v1:0",
     system_prompt="You are a helpful AI assistant.",
 )
 
