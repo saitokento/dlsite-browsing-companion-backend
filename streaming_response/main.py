@@ -6,6 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from strands import Agent
+from xai_sdk import Client
+from xai_sdk.chat import user
 
 
 def get_api_keys():
@@ -60,6 +62,7 @@ strands_agent = Agent(
 )
 
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+xai_client = Client(api_key=XAI_API_KEY)
 
 
 # Based on https://aws.amazon.com/blogs/opensource/introducing-strands-agents-1-0-production-ready-multi-agent-orchestration-made-simple/
@@ -86,6 +89,14 @@ async def openai_streamer(request: str):
             yield event.delta
 
 
+async def xai_streamer(request: str):
+    chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
+    chat.append(user(request))
+
+    for response, chunk in chat.stream():
+        yield chunk.content
+
+
 @app.get("/{request_path:path}")
 async def catch_all(request: Request, request_path: str):
     # Catch-all route to handle all GET requests
@@ -100,4 +111,5 @@ async def index(request: Request):
     request_param = payload.get("request")
 
     # return StreamingResponse(streamer(request_param))
-    return StreamingResponse(openai_streamer(request_param))
+    # return StreamingResponse(openai_streamer(request_param))
+    return StreamingResponse(xai_streamer(request_param))
