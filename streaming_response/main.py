@@ -1,10 +1,57 @@
 import json
 
+import boto3
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from strands import Agent
 
+
+def get_api_keys():
+    """
+    AWS Secrets Manager から OpenAI と xAI の API キーを取得する。
+
+    指定されたシークレット "prod/DBC/APIKeys" (リージョン ap-northeast-1) を読み取り、シークレット文字列を JSON として解析して `OPENAI_API_KEY` と `XAI_API_KEY` を返す。
+
+    Returns:
+        (tuple[str, str]): `OPENAI_API_KEY` と `XAI_API_KEY` の値。
+
+    Raises:
+        RuntimeError: Secrets Manager からの取得に失敗した場合。
+        ValueError: シークレットが有効な JSON でない場合、または JSON に `OPENAI_API_KEY` または `XAI_API_KEY` が含まれていない場合。
+    """
+    secret_name = "prod/DBC/APIKeys"
+    region_name = "ap-northeast-1"
+
+    session = boto3.session.Session()
+    client = session.client(service_name="secretsmanager", region_name=region_name)
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise RuntimeError(
+            f"Failed to retrieve secret from Secrets Manager: {e}"
+        ) from e
+
+    secret_string = get_secret_value_response["SecretString"]
+    try:
+        secret_json = json.loads(secret_string)
+        openai_api_key = secret_json.get("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in secret")
+        xai_api_key = secret_json.get("XAI_API_KEY")
+        if not xai_api_key:
+            raise ValueError("XAI_API_KEY not found in secret")
+        return openai_api_key, xai_api_key
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            "Secret must be JSON with OPENAI_API_KEY and XAI_API_KEY"
+        ) from e
+
+
 app = FastAPI()
+
+OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 
 strands_agent = Agent(
     model="amazon.nova-lite-v1:0",

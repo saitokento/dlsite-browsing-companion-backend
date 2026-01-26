@@ -107,6 +107,8 @@ Resources:
               Resource:
                 - "arn:aws:bedrock:*:781759781440:inference-profile/*"
                 - "arn:aws:bedrock:*::foundation-model/*"
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:prod/DBC/APIKeys-*"
 
   ApiGatewayInvokePermission:
     Type: AWS::Lambda::Permission
