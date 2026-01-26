@@ -4,6 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
+from openai import AsyncOpenAI
 from strands import Agent
 
 
@@ -58,12 +59,31 @@ strands_agent = Agent(
     system_prompt="You are a helpful AI assistant.",
 )
 
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
 
 # Based on https://aws.amazon.com/blogs/opensource/introducing-strands-agents-1-0-production-ready-multi-agent-orchestration-made-simple/
 async def streamer(request: str):
     async for event in strands_agent.stream_async(request):
         if "data" in event:
             yield event["data"]
+
+
+async def openai_streamer(request: str):
+    stream = await openai_client.responses.create(
+        model="gpt-5-nano",
+        input=[
+            {
+                "role": "user",
+                "content": request,
+            },
+        ],
+        stream=True,
+    )
+
+    async for event in stream:
+        if event.type == "response.output_text.delta":
+            yield event.delta
 
 
 @app.get("/{request_path:path}")
@@ -79,4 +99,5 @@ async def index(request: Request):
     payload = json.loads(body.decode("utf-8"))
     request_param = payload.get("request")
 
-    return StreamingResponse(streamer(request_param))
+    # return StreamingResponse(streamer(request_param))
+    return StreamingResponse(openai_streamer(request_param))
