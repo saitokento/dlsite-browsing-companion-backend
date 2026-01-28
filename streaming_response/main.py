@@ -3,6 +3,7 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from strands import Agent
@@ -53,6 +54,14 @@ def get_api_keys():
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 
