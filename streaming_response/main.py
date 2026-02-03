@@ -6,7 +6,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
-from strands import Agent
 from xai_sdk import AsyncClient
 from xai_sdk.chat import user
 
@@ -64,20 +63,8 @@ app.add_middleware(
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 
-strands_agent = Agent(
-    model="amazon.nova-lite-v1:0",
-    system_prompt="You are a helpful AI assistant.",
-)
-
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
-
-
-# Based on https://aws.amazon.com/blogs/opensource/introducing-strands-agents-1-0-production-ready-multi-agent-orchestration-made-simple/
-async def streamer(request: str):
-    async for event in strands_agent.stream_async(request):
-        if "data" in event:
-            yield event["data"]
 
 
 async def openai_streamer(request: str):
