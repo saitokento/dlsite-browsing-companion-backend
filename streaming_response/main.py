@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from strands import Agent
-from xai_sdk import Client
+from xai_sdk import AsyncClient
 from xai_sdk.chat import user
 
 
@@ -70,7 +70,7 @@ strands_agent = Agent(
 )
 
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-xai_client = Client(api_key=XAI_API_KEY)
+xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
 # Based on https://aws.amazon.com/blogs/opensource/introducing-strands-agents-1-0-production-ready-multi-agent-orchestration-made-simple/
