@@ -62,7 +62,7 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchRole.Arn
 
-  BedrockStreamingApi:
+  StreamingApi:
     Type: AWS::Serverless::Api
     DependsOn: ApiGatewayAccount
     Properties:
@@ -100,13 +100,6 @@ Resources:
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:753240598075:layer:LambdaAdapterLayerX86:25
       Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - bedrock:InvokeModelWithResponseStream
-              Resource:
-                - "arn:aws:bedrock:*:781759781440:inference-profile/*"
-                - "arn:aws:bedrock:*::foundation-model/*"
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:prod/DBC/APIKeys-*"
 
@@ -116,7 +109,7 @@ Resources:
       FunctionName: !Ref StreamingResponseFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BedrockStreamingApi}/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/*/*"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -131,6 +124,6 @@ Outputs:
   CommentGenerationFunctionIamRole:
     Description: "IAM Role for Comment Generation function"
     Value: !GetAtt CommentGenerationFunctionRole.Arn
-  BedrockStreamingApiUrl:
-    Description: "API Gateway endpoint URL for Bedrock streaming"
-    Value: !Sub "https://${BedrockStreamingApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask"
+  StreamingApiUrl:
+    Description: "API Gateway endpoint URL for streaming"
+    Value: !Sub "https://${StreamingApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask"
