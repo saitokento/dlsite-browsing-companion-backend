@@ -2,7 +2,7 @@ import json
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
@@ -115,10 +115,14 @@ async def catch_all(request: Request, request_path: str):
 @app.post("/{request_path:path}")
 async def index(request: Request):
     # Get the JSON payload from the POST body
-    body = await request.body()
-    payload = json.loads(body.decode("utf-8"))
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from e
     request_param = payload.get("request")
+    if not request_param:
+        raise HTTPException(status_code=400, detail="'request' is required")
 
-    # return StreamingResponse(streamer(request_param))
-    # return StreamingResponse(openai_streamer(request_param))
-    return StreamingResponse(xai_streamer(request_param))
+    # return StreamingResponse(streamer(request_param)return StreamingResponse(xai_streamer(request_param), media_type="text/plain"))
+    # return StreamingResponse(openai_streamer(request_param)return StreamingResponse(xai_streamer(request_param), media_type="text/plain"))
+    return StreamingResponse(xai_streamer(request_param), media_type="text/plain")
