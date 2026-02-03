@@ -122,6 +122,5 @@ async def index(request: Request):
     if not request_param:
         raise HTTPException(status_code=400, detail="'request' is required")
 
-    # return StreamingResponse(streamer(request_param)return StreamingResponse(xai_streamer(request_param), media_type="text/plain"))
-    # return StreamingResponse(openai_streamer(request_param)return StreamingResponse(xai_streamer(request_param), media_type="text/plain"))
+    # return StreamingResponse(openai_streamer(request_param), media_type="text/plain")
     return StreamingResponse(xai_streamer(request_param), media_type="text/plain")
