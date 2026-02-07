@@ -20,7 +20,7 @@ paths:
         "200":
           description: "Streaming response from agent"
           content:
-            text/html:
+            text/plain:
               schema:
                 type: string
       x-amazon-apigateway-integration:
