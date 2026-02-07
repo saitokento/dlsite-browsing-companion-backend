@@ -88,7 +88,7 @@ async def xai_streamer(request: str):
     chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
     chat.append(user(request))
 
-    for response, chunk in chat.stream():
+    async for _response, chunk in chat.stream():
         yield chunk.content
 
 
