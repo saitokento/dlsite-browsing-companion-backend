@@ -1,6 +1,6 @@
 openapi: "3.0.1"
 info:
-  title: "strands-streaming-lambda-api"
+  title: "streaming-lambda-api"
   version: "1.0.0"
 paths:
   /ask:
@@ -13,12 +13,12 @@ paths:
               properties:
                 request:
                   type: string
-                  description: "The request to send to the Strands agent"
+                  description: "The request to send to agent"
               required:
                 - request
       responses:
         "200":
-          description: "Streaming response from Strands agent"
+          description: "Streaming response from agent"
           content:
             text/html:
               schema:
