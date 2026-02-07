@@ -16,25 +16,6 @@ Globals:
       AllowOrigin: "'*'"
 
 Resources:
-  CommentGenerationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: comment_generation/
-      Handler: app.lambda_handler
-      Runtime: python3.14
-      Architectures:
-        - x86_64
-      Events:
-        CommentGeneration:
-          Type: Api
-          Properties:
-            Path: /comment
-            Method: post
-      Timeout: 30
-      Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:prod/DBC/APIKeys-*"
-      # CloudWatch Log Group for API Gateway Access Logs
   # CloudWatch Log Group for API Gateway Access Logs
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
@@ -115,15 +96,6 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  CommentGenerationApi:
-    Description: "API Gateway endpoint URL for Comment Generation function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/comment/"
-  CommentGenerationFunction:
-    Description: "Comment Generation Lambda Function ARN"
-    Value: !GetAtt CommentGenerationFunction.Arn
-  CommentGenerationFunctionIamRole:
-    Description: "IAM Role for Comment Generation function"
-    Value: !GetAtt CommentGenerationFunctionRole.Arn
   StreamingApiUrl:
     Description: "API Gateway endpoint URL for streaming"
     Value: !Sub "https://${StreamingApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask"
