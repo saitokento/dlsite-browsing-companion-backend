@@ -1,4 +1,3 @@
-strands-agents
 fastapi
 uvicorn
 openai==2.15.0
