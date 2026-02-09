@@ -13,10 +13,10 @@ from xai_sdk.chat import user
 def get_api_keys():
     """
     Secrets Manager の "prod/DBC/APIKeys" から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
-    
+
     Returns:
         tuple[str, str]: (OPENAI_API_KEY, XAI_API_KEY) の順のタプル。
-    
+
     Raises:
         RuntimeError: Secrets Manager からの取得に失敗した場合。
         ValueError: シークレットが有効な JSON でない場合、または OPENAI_API_KEY または XAI_API_KEY が存在しない場合。
@@ -68,10 +68,10 @@ xai_client = AsyncClient(api_key=XAI_API_KEY)
 async def openai_streamer(request: str):
     """
     OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-    
+
     Parameters:
         request (str): モデルへ送信するプロンプト。
-    
+
     Returns:
         ストリームされたテキストの各チャンク（`str`）。
     """
@@ -94,10 +94,10 @@ async def openai_streamer(request: str):
 async def xai_streamer(request: str):
     """
     xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-    
+
     Parameters:
         request (str): モデルへ送信するプロンプト。
-    
+
     Returns:
         ストリームされたテキストの各チャンク（`str`）。
     """
@@ -108,31 +108,18 @@ async def xai_streamer(request: str):
         yield chunk.content
 
 
-@app.get("/{request_path:path}")
-async def catch_all(request: Request, request_path: str):
-    # Catch-all route to handle all GET requests
-    """
-    すべてのGETリクエストを受けるキャッチオールルート。
-    
-    Parameters:
-        request (Request): 受信したHTTPリクエストオブジェクト。
-        request_path (str): ルートにマッチしたパス部分の文字列。
-    """
-    return
-
-
 @app.post("/{request_path:path}")
 async def index(request: Request):
     # Get the JSON payload from the POST body
     """
     クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、AIからのレスポンスをテキストストリームとして返すエンドポイント処理を行う。
-    
+
     Parameters:
         request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要がある。
-    
+
     Returns:
         StreamingResponse: AIからのレスポンスを逐次返すストリームレスポンス（media_type="text/plain"）。
-    
+
     Raises:
         HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
         HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
