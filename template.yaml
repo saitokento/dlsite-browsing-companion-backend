@@ -64,6 +64,11 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: api-gateway-config.yaml
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+        AddApiKeyRequiredToCorsPreflight: false
 
   StreamingResponseFunction:
     Type: AWS::Serverless::Function
