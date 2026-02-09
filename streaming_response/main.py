@@ -12,16 +12,14 @@ from xai_sdk.chat import user
 
 def get_api_keys():
     """
-    AWS Secrets Manager から OpenAI と xAI の API キーを取得する。
-
-    指定されたシークレット "prod/DBC/APIKeys" (リージョン ap-northeast-1) を読み取り、シークレット文字列を JSON として解析して `OPENAI_API_KEY` と `XAI_API_KEY` を返す。
-
+    Secrets Manager の "prod/DBC/APIKeys"（リージョン指定は ap-northeast-1 想定）から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
+    
     Returns:
-        (tuple[str, str]): `OPENAI_API_KEY` と `XAI_API_KEY` の値。
-
+        tuple[str, str]: (OPENAI_API_KEY, XAI_API_KEY) の順のタプル。
+    
     Raises:
         RuntimeError: Secrets Manager からの取得に失敗した場合。
-        ValueError: シークレットが有効な JSON でない場合、または JSON に `OPENAI_API_KEY` または `XAI_API_KEY` が含まれていない場合。
+        ValueError: シークレットが有効な JSON でない場合、または OPENAI_API_KEY または XAI_API_KEY が存在しない場合。
     """
     secret_name = "prod/DBC/APIKeys"
 
@@ -68,6 +66,15 @@ xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
 async def openai_streamer(request: str):
+    """
+    OpenAIの応答をストリーミングで受け取り、テキストのチャンクを逐次生成する。
+    
+    Parameters:
+        request (str): モデルへ送信するユーザーからのメッセージ本文。
+    
+    Returns:
+        ストリームされたテキストの各チャンク（`str`）。
+    """
     stream = await openai_client.responses.create(
         model="gpt-5-nano",
         input=[
@@ -85,6 +92,15 @@ async def openai_streamer(request: str):
 
 
 async def xai_streamer(request: str):
+    """
+    xAIチャットモデルへの入力を送信し、生成される応答の断片を逐次的に返す。
+    
+    Parameters:
+        request (str): ユーザーからの入力テキスト。
+    
+    Returns:
+        各チャンクのテキスト内容（str）を逐次的に生成するイテレータ。
+    """
     chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
     chat.append(user(request))
 
@@ -95,12 +111,32 @@ async def xai_streamer(request: str):
 @app.get("/{request_path:path}")
 async def catch_all(request: Request, request_path: str):
     # Catch-all route to handle all GET requests
+    """
+    すべてのGETリクエストを受けるキャッチオールルート。
+    
+    Parameters:
+        request (Request): 受信したHTTPリクエストオブジェクト。
+        request_path (str): ルートにマッチしたパス部分の文字列。
+    """
     return
 
 
 @app.post("/{request_path:path}")
 async def index(request: Request):
     # Get the JSON payload from the POST body
+    """
+    クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、xAIモデルの生成をテキストストリームとして返すエンドポイント処理を行います。
+    
+    Parameters:
+        request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要があります。
+    
+    Returns:
+        StreamingResponse: xAIチャットストリームからのテキスト断片を逐次返すストリームレスポンス（media_type="text/plain"）。
+    
+    Raises:
+        HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生します。
+        HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生します。
+    """
     try:
         payload = await request.json()
     except json.JSONDecodeError as e:
