@@ -12,7 +12,7 @@ from xai_sdk.chat import user
 
 def get_api_keys():
     """
-    Secrets Manager の "prod/DBC/APIKeys"（リージョン指定は ap-northeast-1 想定）から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
+    Secrets Manager の "prod/DBC/APIKeys" から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
     
     Returns:
         tuple[str, str]: (OPENAI_API_KEY, XAI_API_KEY) の順のタプル。
@@ -67,10 +67,10 @@ xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 async def openai_streamer(request: str):
     """
-    OpenAIの応答をストリーミングで受け取り、テキストのチャンクを逐次生成する。
+    OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
     
     Parameters:
-        request (str): モデルへ送信するユーザーからのメッセージ本文。
+        request (str): モデルへ送信するプロンプト。
     
     Returns:
         ストリームされたテキストの各チャンク（`str`）。
@@ -93,13 +93,13 @@ async def openai_streamer(request: str):
 
 async def xai_streamer(request: str):
     """
-    xAIチャットモデルへの入力を送信し、生成される応答の断片を逐次的に返す。
+    xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
     
     Parameters:
-        request (str): ユーザーからの入力テキスト。
+        request (str): モデルへ送信するプロンプト。
     
     Returns:
-        各チャンクのテキスト内容（str）を逐次的に生成するイテレータ。
+        ストリームされたテキストの各チャンク（`str`）。
     """
     chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
     chat.append(user(request))
@@ -125,17 +125,17 @@ async def catch_all(request: Request, request_path: str):
 async def index(request: Request):
     # Get the JSON payload from the POST body
     """
-    クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、xAIモデルの生成をテキストストリームとして返すエンドポイント処理を行います。
+    クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、AIからのレスポンスをテキストストリームとして返すエンドポイント処理を行う。
     
     Parameters:
-        request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要があります。
+        request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要がある。
     
     Returns:
-        StreamingResponse: xAIチャットストリームからのテキスト断片を逐次返すストリームレスポンス（media_type="text/plain"）。
+        StreamingResponse: AIからのレスポンスを逐次返すストリームレスポンス（media_type="text/plain"）。
     
     Raises:
-        HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生します。
-        HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生します。
+        HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
+        HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
     """
     try:
         payload = await request.json()
