@@ -90,7 +90,7 @@ Resources:
       FunctionName: !Ref StreamingResponseFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/Prod/POST/ask"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
