@@ -55,10 +55,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["chrome-extension://dfjadeefdlmgebcmplicghageakblbop"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["OPTIONS,POST"],
+    allow_headers=["Content-Type,X-Amz-Date,Authorization,X-Api-Key"],
 )
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
