@@ -128,6 +128,10 @@ async def index(request: Request):
         payload = await request.json()
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=400, detail="Invalid JSON body") from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=400, detail="Failed to read request body"
+        ) from e
     request_param = payload.get("request")
     if not request_param:
         raise HTTPException(status_code=400, detail="'request' is required")
