@@ -3,4 +3,4 @@ uvicorn
 openai==2.15.0
 boto3==1.42.33
 urllib3>=2.6.3,<3.0.0
-xai_sdk==1.5.0
+xai_sdk==1.6.1
