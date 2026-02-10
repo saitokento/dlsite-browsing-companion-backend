@@ -1,0 +1,67 @@
+openapi: "3.0.1"
+info:
+  title: "streaming-lambda-api"
+  version: "1.0.0"
+paths:
+  /ask:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request:
+                  type: string
+                  description: "The request to send to agent"
+              required:
+                - request
+      responses:
+        "200":
+          description: "Streaming response from agent"
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2021-11-15/functions/${StreamingResponseFunction.Arn}/response-streaming-invocations"
+        httpMethod: "POST"
+        responseTransferMode: "STREAM"
+        type: "aws_proxy"
+      security:
+        - api_key: []
+    options:
+      responses:
+        200:
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+          content: {}
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        passthroughBehavior: "never"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'chrome-extension://dfjadeefdlmgebcmplicghageakblbop'"
+      security: []
+x-amazon-apigateway-api-key-source: HEADER
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: x-api-key
+      in: header
