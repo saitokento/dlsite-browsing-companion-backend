@@ -1,4 +1,5 @@
 import json
+import os
 
 import boto3
 from botocore.exceptions import ClientError
@@ -21,7 +22,7 @@ def get_api_keys():
         RuntimeError: Secrets Manager からの取得に失敗した場合。
         ValueError: シークレットが有効な JSON でない場合、または OPENAI_API_KEY または XAI_API_KEY が存在しない場合。
     """
-    secret_name = "prod/DBC/APIKeys"
+    secret_name = os.getenv("SECRETS_NAME", "prod/DBC/APIKeys")
 
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager")

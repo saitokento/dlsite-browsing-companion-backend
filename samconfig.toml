@@ -21,6 +21,7 @@ s3_prefix = "dlsite-browsing-companion-backend"
 region = "ap-northeast-1"
 disable_rollback = false
 image_repositories = []
+parameter_overrides = "Environment=Prod SecretsName=prod/DBC/APIKeys"
 
 [default.package.parameters]
 resolve_s3 = true
@@ -53,6 +54,7 @@ s3_prefix = "dlsite-browsing-companion-backend-dev"
 region = "ap-northeast-1"
 disable_rollback = false
 image_repositories = []
+parameter_overrides = "Environment=Dev SecretsName=dev/DBC/APIKeys"
 
 [dev.package.parameters]
 resolve_s3 = true

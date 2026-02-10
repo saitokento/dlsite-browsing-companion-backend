@@ -10,6 +10,17 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters:
+  Environment:
+    Type: String
+    Default: Prod
+    AllowedValues:
+      - Prod
+      - Dev
+  SecretsName:
+    Type: String
+    Default: prod/DBC/APIKeys
+
 Resources:
   # CloudWatch Log Group for API Gateway Access Logs
   ApiGatewayAccessLogs:
@@ -42,7 +53,7 @@ Resources:
     Type: AWS::Serverless::Api
     DependsOn: ApiGatewayAccount
     Properties:
-      StageName: Prod
+      StageName: !Ref Environment
       EndpointConfiguration:
         Type: REGIONAL
       AccessLogSetting:
@@ -78,11 +89,12 @@ Resources:
           AWS_LAMBDA_EXEC_WRAPPER: /opt/bootstrap
           AWS_LWA_INVOKE_MODE: response_stream
           PORT: 8000
+          SECRETS_NAME: !Ref SecretsName
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:753240598075:layer:LambdaAdapterLayerX86:25
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:prod/DBC/APIKeys-*"
+            SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretsName}-*"
 
   ApiGatewayInvokePermission:
     Type: AWS::Lambda::Permission
@@ -90,7 +102,7 @@ Resources:
       FunctionName: !Ref StreamingResponseFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/Prod/POST/ask"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/${Environment}/POST/ask"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -98,4 +110,4 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   StreamingApiUrl:
     Description: "API Gateway endpoint URL for streaming"
-    Value: !Sub "https://${StreamingApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask"
+    Value: !Sub "https://${StreamingApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/ask"
