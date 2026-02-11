@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
 from xai_sdk import AsyncClient
-from xai_sdk.chat import user
+from xai_sdk.chat import system, user
 
 
 def get_api_keys():
@@ -66,7 +66,7 @@ openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
-async def openai_streamer(request: str):
+async def openai_streamer(request: str, instructions: str):
     """
     OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
 
@@ -79,6 +79,7 @@ async def openai_streamer(request: str):
     stream = await openai_client.responses.create(
         model="gpt-5-nano",
         input=[
+            {"role": "developer", "content": instructions},
             {
                 "role": "user",
                 "content": request,
@@ -92,7 +93,7 @@ async def openai_streamer(request: str):
             yield event.delta
 
 
-async def xai_streamer(request: str):
+async def xai_streamer(request: str, instructions: str):
     """
     xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
 
@@ -103,6 +104,7 @@ async def xai_streamer(request: str):
         ストリームされたテキストの各チャンク（`str`）。
     """
     chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
+    chat.append(system(instructions))
     chat.append(user(request))
 
     async for _response, chunk in chat.stream():
@@ -136,6 +138,9 @@ async def index(request: Request):
     request_param = payload.get("request")
     if not request_param:
         raise HTTPException(status_code=400, detail="'request' is required")
+    instructions_param = payload.get("instructions", "")
 
-    # return StreamingResponse(openai_streamer(request_param), media_type="text/plain")
-    return StreamingResponse(xai_streamer(request_param), media_type="text/plain")
+    # return StreamingResponse(openai_streamer(request_param, instructions_param), media_type="text/plain")
+    return StreamingResponse(
+        xai_streamer(request_param, instructions_param), media_type="text/plain"
+    )
