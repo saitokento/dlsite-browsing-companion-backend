@@ -14,6 +14,8 @@ paths:
                 request:
                   type: string
                   description: "The request to send to agent"
+                instructions:
+                  type: string
               required:
                 - request
       responses:
