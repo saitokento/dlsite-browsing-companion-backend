@@ -1,5 +1,6 @@
 import json
 import os
+from decimal import Decimal
 
 import boto3
 from botocore.exceptions import ClientError
@@ -7,8 +8,20 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
+
+
+class WorkInfo(BaseModel):
+    name: str
+    price: Decimal
+    official_price: Decimal
+    coupon_price: Decimal | None
+    price_prefix: str
+    price_suffix: str
+    genres: list[str]
+    description: str
 
 
 def get_api_keys():
