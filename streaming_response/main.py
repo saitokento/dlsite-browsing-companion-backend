@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
@@ -22,6 +22,10 @@ class WorkInfo(BaseModel):
     price_suffix: str = Field(alias="pricePrefix")
     genres: list[str]
     description: str
+
+
+class AskRequest(BaseModel):
+    work_info: WorkInfo = Field(alias="workInfo")
 
 
 def get_api_keys():
@@ -79,7 +83,28 @@ openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
-async def openai_streamer(request: str, instructions: str):
+def create_comment_prompt(work: WorkInfo):
+    if work.coupon_price is not None:
+        coupon_line = (
+            f"\nクーポン価格: {work.price_prefix}{work.coupon_price}{work.price_suffix}"
+        )
+    else:
+        coupon_line = ""
+
+    return (
+        "以下の作品情報をもとに、作品に対して短いコメントをしてください。\n"
+        "出力はコメントの本文のみにしてください。\n\n"
+        f"タイトル: {work.name}\n"
+        f"価格: {work.price_prefix}{work.price}{work.price_suffix}"
+        f"（サークル設定価格: {work.price_prefix}{work.official_price}{work.price_suffix}）"
+        f"{coupon_line}\n"
+        f"ジャンル: {', '.join(work.genres)}\n"
+        "作品内容:\n"
+        f"{work.description}"
+    )
+
+
+async def openai_streamer(prompt: str, instructions: str):
     """
     OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
 
@@ -95,7 +120,7 @@ async def openai_streamer(request: str, instructions: str):
             {"role": "developer", "content": instructions},
             {
                 "role": "user",
-                "content": request,
+                "content": prompt,
             },
         ],
         stream=True,
@@ -106,7 +131,7 @@ async def openai_streamer(request: str, instructions: str):
             yield event.delta
 
 
-async def xai_streamer(request: str, instructions: str):
+async def xai_streamer(prompt: str, instructions: str):
     """
     xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
 
@@ -118,14 +143,14 @@ async def xai_streamer(request: str, instructions: str):
     """
     chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
     chat.append(system(instructions))
-    chat.append(user(request))
+    chat.append(user(prompt))
 
     async for _response, chunk in chat.stream():
         yield chunk.content
 
 
 @app.post("/{request_path:path}")
-async def index(request: Request):
+async def index(body: AskRequest):
     # Get the JSON payload from the POST body
     """
     クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、AIからのレスポンスをテキストストリームとして返すエンドポイント処理を行う。
@@ -140,20 +165,12 @@ async def index(request: Request):
         HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
         HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
     """
-    try:
-        payload = await request.json()
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail="Invalid JSON body") from e
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail="Failed to read request body"
-        ) from e
-    request_param = payload.get("request")
-    if not request_param:
-        raise HTTPException(status_code=400, detail="'request' is required")
-    instructions_param = payload.get("instructions", "")
+    work_info = body.work_info
+    prompt = create_comment_prompt(work_info)
 
-    # return StreamingResponse(openai_streamer(request_param, instructions_param), media_type="text/plain")
+    instructions = "あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
+
+    # return StreamingResponse(openai_streamer(prompt, instructions), media_type="text/plain")
     return StreamingResponse(
-        xai_streamer(request_param, instructions_param), media_type="text/plain"
+        xai_streamer(prompt, instructions), media_type="text/plain"
     )

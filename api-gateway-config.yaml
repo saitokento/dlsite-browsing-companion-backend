@@ -11,13 +11,30 @@ paths:
             schema:
               type: object
               properties:
-                request:
-                  type: string
-                  description: "The request to send to agent"
-                instructions:
-                  type: string
+                workInfo:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    price:
+                      type: number
+                    officialPrice:
+                      type: number
+                    couponPrice:
+                      type: number
+                      nullable: true
+                    pricePrefix:
+                      type: string
+                    priceSuffix:
+                      type: string
+                    genres:
+                      type: array
+                      items:
+                        type: string
+                    description:
+                      type: string
               required:
-                - request
+                - workInfo
       responses:
         "200":
           description: "Streaming response from agent"
