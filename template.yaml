@@ -20,6 +20,9 @@ Parameters:
   SecretsName:
     Type: String
     Default: prod/DBC/APIKeys
+  TableName:
+    Type: String
+    Default: dbc
 
 Resources:
   # CloudWatch Log Group for API Gateway Access Logs
@@ -90,13 +93,14 @@ Resources:
           AWS_LWA_INVOKE_MODE: response_stream
           PORT: 8000
           SECRETS_NAME: !Ref SecretsName
+          TABLE_NAME: !Ref TableName
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:753240598075:layer:LambdaAdapterLayerX86:25
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretsName}-*"
         - DynamoDBReadPolicy:
-            TableName: dbc
+            TableName: !Ref TableName
 
   ApiGatewayInvokePermission:
     Type: AWS::Lambda::Permission

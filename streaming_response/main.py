@@ -67,8 +67,10 @@ def get_api_keys():
         ) from e
 
 
+table_name = os.getenv("TABLE_NAME", "dbc")
+
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("dbc")
+table = dynamodb.Table(table_name)
 
 app = FastAPI()
 
