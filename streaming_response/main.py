@@ -67,6 +67,9 @@ def get_api_keys():
         ) from e
 
 
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("dbc")
+
 app = FastAPI()
 
 app.add_middleware(
@@ -149,6 +152,24 @@ async def xai_streamer(prompt: str, instructions: str):
         yield chunk.content
 
 
+def get_dynamodb_item(pk: str, sk: str, attribute: str):
+    try:
+        response = table.get_item(
+            Key={
+                "PK": pk,
+                "SK": sk,
+            }
+        )
+    except ClientError as e:
+        raise RuntimeError(f"DynamoDB get_item failed: {e}") from e
+
+    item = response.get("Item")
+    if not item or attribute not in item:
+        raise ValueError(f"{pk} not found for {sk}")
+
+    return item.get(attribute)
+
+
 @app.post("/{request_path:path}")
 async def index(body: AskRequest):
     # Get the JSON payload from the POST body
@@ -168,7 +189,7 @@ async def index(body: AskRequest):
     work_info = body.work_info
     prompt = create_comment_prompt(work_info)
 
-    instructions = "あなたはユーザーの友人で、ユーザーと一緒にDLsiteを見ています。"
+    instructions = get_dynamodb_item("instructions", "default", "text")
 
     # return StreamingResponse(openai_streamer(prompt, instructions), media_type="text/plain")
     return StreamingResponse(
