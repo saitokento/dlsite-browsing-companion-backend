@@ -146,8 +146,9 @@ async def xai_streamer(prompt: str, instructions: str):
     Returns:
         ストリームされたテキストの各チャンク（`str`）。
     """
-    chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
-    chat.append(system(instructions))
+    chat = xai_client.chat.create(
+        model="grok-4-1-fast-non-reasoning", messages=[system(instructions)]
+    )
     chat.append(user(prompt))
 
     async for _response, chunk in chat.stream():
