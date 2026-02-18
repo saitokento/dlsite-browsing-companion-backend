@@ -73,9 +73,9 @@ paths:
           default:
             statusCode: "200"
             responseParameters:
-              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,X-Api-Key'"
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
-              method.response.header.Access-Control-Allow-Origin: "'chrome-extension://dfjadeefdlmgebcmplicghageakblbop,moz-extension://'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
       security: []
 x-amazon-apigateway-api-key-source: HEADER
 components:
