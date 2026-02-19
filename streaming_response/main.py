@@ -19,7 +19,7 @@ class WorkInfo(BaseModel):
     official_price: Decimal = Field(alias="officialPrice")
     coupon_price: Decimal | None = Field(alias="couponPrice")
     price_prefix: str = Field(alias="pricePrefix")
-    price_suffix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
     genres: list[str]
     description: str
 
