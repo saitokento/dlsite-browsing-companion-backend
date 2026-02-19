@@ -7,7 +7,6 @@ from botocore.exceptions import ClientError
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
@@ -84,7 +83,7 @@ app.add_middleware(
 
 OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+# openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
@@ -109,31 +108,31 @@ def create_comment_prompt(work: WorkInfo):
     )
 
 
-async def openai_streamer(prompt: str, instructions: str):
-    """
-    OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-
-    Parameters:
-        request (str): モデルへ送信するプロンプト。
-
-    Returns:
-        ストリームされたテキストの各チャンク（`str`）。
-    """
-    stream = await openai_client.responses.create(
-        model="gpt-5-nano",
-        input=[
-            {"role": "developer", "content": instructions},
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-        stream=True,
-    )
-
-    async for event in stream:
-        if event.type == "response.output_text.delta":
-            yield event.delta
+# async def openai_streamer(prompt: str, instructions: str):
+#     """
+#     OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
+#
+#     Parameters:
+#         request (str): モデルへ送信するプロンプト。
+#
+#     Returns:
+#         ストリームされたテキストの各チャンク（`str`）。
+#     """
+#     stream = await openai_client.responses.create(
+#         model="gpt-5-nano",
+#         input=[
+#             {"role": "developer", "content": instructions},
+#             {
+#                 "role": "user",
+#                 "content": prompt,
+#             },
+#         ],
+#         stream=True,
+#     )
+#
+#     async for event in stream:
+#         if event.type == "response.output_text.delta":
+#             yield event.delta
 
 
 async def xai_streamer(prompt: str, instructions: str):
@@ -194,7 +193,9 @@ async def index(body: AskRequest):
 
     instructions = get_dynamodb_item("instructions", "default", "text")
 
-    # return StreamingResponse(openai_streamer(prompt, instructions), media_type="text/plain")
+    # return StreamingResponse(
+    #     openai_streamer(prompt, instructions), media_type="text/plain"
+    # )
     return StreamingResponse(
         xai_streamer(prompt, instructions), media_type="text/plain"
     )
