@@ -11,7 +11,7 @@ paths:
             schema:
               type: object
               properties:
-                workInfo:
+                work:
                   type: object
                   properties:
                     name:
@@ -34,7 +34,7 @@ paths:
                     description:
                       type: string
               required:
-                - workInfo
+                - work
       responses:
         "200":
           description: "Streaming response from agent"

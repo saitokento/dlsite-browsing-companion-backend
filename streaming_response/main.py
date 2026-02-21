@@ -12,7 +12,7 @@ from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
 
 
-class WorkInfo(BaseModel):
+class Work(BaseModel):
     name: str
     price: Decimal
     official_price: Decimal = Field(alias="officialPrice")
@@ -24,7 +24,7 @@ class WorkInfo(BaseModel):
 
 
 class AskRequest(BaseModel):
-    work_info: WorkInfo = Field(alias="workInfo")
+    work: Work
 
 
 def get_api_keys():
@@ -87,7 +87,7 @@ OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
-def create_comment_prompt(work: WorkInfo):
+def create_comment_prompt(work: Work):
     if work.coupon_price is not None:
         coupon_line = (
             f"\nクーポン価格: {work.price_prefix}{work.coupon_price}{work.price_suffix}"
@@ -188,8 +188,8 @@ async def index(body: AskRequest):
         HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
         HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
     """
-    work_info = body.work_info
-    prompt = create_comment_prompt(work_info)
+    work = body.work
+    prompt = create_comment_prompt(work)
 
     instructions = get_dynamodb_item("instructions", "default", "text")
 
