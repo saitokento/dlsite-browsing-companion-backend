@@ -28,16 +28,6 @@ class AskRequest(BaseModel):
 
 
 def get_api_keys():
-    """
-    Secrets Manager の "prod/DBC/APIKeys" から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
-
-    Returns:
-        tuple[str, str]: (OPENAI_API_KEY, XAI_API_KEY) の順のタプル。
-
-    Raises:
-        RuntimeError: Secrets Manager からの取得に失敗した場合。
-        ValueError: シークレットが有効な JSON でない場合、または OPENAI_API_KEY または XAI_API_KEY が存在しない場合。
-    """
     secret_name = os.getenv("SECRETS_NAME", "prod/DBC/APIKeys")
 
     session = boto3.session.Session()
@@ -109,15 +99,6 @@ def create_comment_prompt(work: Work):
 
 
 # async def openai_streamer(prompt: str, instructions: str):
-#     """
-#     OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-#
-#     Parameters:
-#         request (str): モデルへ送信するプロンプト。
-#
-#     Returns:
-#         ストリームされたテキストの各チャンク（`str`）。
-#     """
 #     stream = await openai_client.responses.create(
 #         model="gpt-5-nano",
 #         input=[
@@ -136,15 +117,6 @@ def create_comment_prompt(work: Work):
 
 
 async def xai_streamer(prompt: str, instructions: str):
-    """
-    xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-
-    Parameters:
-        request (str): モデルへ送信するプロンプト。
-
-    Returns:
-        ストリームされたテキストの各チャンク（`str`）。
-    """
     chat = xai_client.chat.create(
         model="grok-4-1-fast-non-reasoning", messages=[system(instructions)]
     )
@@ -175,19 +147,6 @@ def get_dynamodb_item(pk: str, sk: str, attribute: str):
 @app.post("/{request_path:path}")
 async def index(body: AskRequest):
     # Get the JSON payload from the POST body
-    """
-    クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、AIからのレスポンスをテキストストリームとして返すエンドポイント処理を行う。
-
-    Parameters:
-        request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要がある。
-
-    Returns:
-        StreamingResponse: AIからのレスポンスを逐次返すストリームレスポンス（media_type="text/plain"）。
-
-    Raises:
-        HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
-        HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
-    """
     work = body.work
     prompt = create_comment_prompt(work)
 
