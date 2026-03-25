@@ -1,15 +1,20 @@
 import json
 import os
 from decimal import Decimal
+from enum import StrEnum
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
+
+
+class Usecase(StrEnum):
+    WORK = "work"
 
 
 class Work(BaseModel):
@@ -24,7 +29,8 @@ class Work(BaseModel):
 
 
 class AskRequest(BaseModel):
-    work: Work
+    usecase: Usecase
+    work: Work | None = None
 
 
 def get_api_keys():
@@ -146,11 +152,19 @@ def get_dynamodb_item(pk: str, sk: str, attribute: str):
 
 @app.post("/{request_path:path}")
 async def index(body: AskRequest):
-    # Get the JSON payload from the POST body
-    work = body.work
-    prompt = create_comment_prompt(work)
+    match body.usecase:
+        case Usecase.WORK:
+            if body.work is None:
+                raise HTTPException(
+                    status_code=422, detail="work is required for usecase=work"
+                )
+            prompt = create_comment_prompt(body.work)
 
-    instructions = get_dynamodb_item("instructions", "default", "text")
+            instructions = get_dynamodb_item("instructions", "default", "text")
+        case _:
+            raise HTTPException(
+                status_code=400, detail=f"usecase not supported: {body.usecase}"
+            )
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"

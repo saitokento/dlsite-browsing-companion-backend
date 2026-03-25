@@ -11,30 +11,12 @@ paths:
             schema:
               type: object
               properties:
-                work:
+                usecase:
+                  type: string
+                input:
                   type: object
-                  properties:
-                    name:
-                      type: string
-                    price:
-                      type: number
-                    officialPrice:
-                      type: number
-                    couponPrice:
-                      type: number
-                      nullable: true
-                    pricePrefix:
-                      type: string
-                    priceSuffix:
-                      type: string
-                    genres:
-                      type: array
-                      items:
-                        type: string
-                    description:
-                      type: string
               required:
-                - work
+                - usecase
       responses:
         "200":
           description: "Streaming response from agent"
