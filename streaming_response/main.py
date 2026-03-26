@@ -150,7 +150,7 @@ def get_dynamodb_item(pk: str, sk: str, attribute: str):
     return item.get(attribute)
 
 
-@app.post("/{request_path:path}")
+@app.post("/ask")
 async def index(body: AskRequest):
     match body.usecase:
         case Usecase.WORK:
