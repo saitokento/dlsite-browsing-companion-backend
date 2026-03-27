@@ -2,10 +2,11 @@ import json
 import os
 from decimal import Decimal
 from enum import StrEnum
+from typing import Literal
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -28,9 +29,13 @@ class Work(BaseModel):
     description: str
 
 
+class WorkPayload(BaseModel):
+    work: Work
+
+
 class AskRequest(BaseModel):
-    usecase: Usecase
-    work: Work | None = None
+    usecase: Literal[Usecase.WORK]
+    payload: WorkPayload
 
 
 def get_api_keys():
@@ -152,19 +157,8 @@ def get_dynamodb_item(pk: str, sk: str, attribute: str):
 
 @app.post("/ask")
 async def index(body: AskRequest):
-    match body.usecase:
-        case Usecase.WORK:
-            if body.work is None:
-                raise HTTPException(
-                    status_code=422, detail="work is required for usecase=work"
-                )
-            prompt = create_comment_prompt(body.work)
-
-            instructions = get_dynamodb_item("instructions", "default", "text")
-        case _:
-            raise HTTPException(
-                status_code=400, detail=f"usecase not supported: {body.usecase}"
-            )
+    prompt = create_comment_prompt(body.payload.work)
+    instructions = get_dynamodb_item("instructions", "default", "text")
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"

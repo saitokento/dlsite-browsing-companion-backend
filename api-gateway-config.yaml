@@ -13,7 +13,7 @@ paths:
               properties:
                 usecase:
                   type: string
-                input:
+                payload:
                   type: object
               required:
                 - usecase
