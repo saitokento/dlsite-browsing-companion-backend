@@ -21,7 +21,7 @@ class Work(BaseModel):
     name: str
     price: Decimal
     official_price: Decimal = Field(alias="officialPrice")
-    coupon_price: Decimal | None = Field(alias="couponPrice")
+    coupon_price: Decimal | None = Field(default=None, alias="couponPrice")
     price_prefix: str = Field(alias="pricePrefix")
     price_suffix: str = Field(alias="priceSuffix")
     genres: list[str]
