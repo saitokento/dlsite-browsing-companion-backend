@@ -83,9 +83,15 @@ def get_api_keys():
                 f"An unexpected error occurred while retrieving the requested secret {secret_name}: {e}"
             ) from e
 
-    secret_string = get_secret_value_response["SecretString"]
+    if "SecretString" in get_secret_value_response:
+        secret_data = get_secret_value_response["SecretString"]
+    else:
+        raise ValueError(
+            f'The requested secret {secret_name} does not contain "SecretString"'
+        )
+
     try:
-        secret_json = json.loads(secret_string)
+        secret_json = json.loads(secret_data)
         openai_api_key = secret_json.get("OPENAI_API_KEY")
         if not openai_api_key:
             raise ValueError("OPENAI_API_KEY not found in secret")
