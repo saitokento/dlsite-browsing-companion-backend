@@ -33,9 +33,20 @@ class WorkPayload(BaseModel):
     work: Work
 
 
+# class WorkRequest(BaseModel):
+#     usecase: Literal[Usecase.WORK]
+#     payload: WorkPayload
+
+
 class AskRequest(BaseModel):
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
+
+
+# AskRequest = Annotated[
+#     WorkRequest | OtherRequest,
+#     Field(discriminator="usecase"),
+# ]
 
 
 def get_api_keys():
