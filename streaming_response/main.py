@@ -58,9 +58,30 @@ def get_api_keys():
     try:
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
-        raise RuntimeError(
-            f"Failed to retrieve secret from Secrets Manager: {e}"
-        ) from e
+        if e.response["Error"]["Code"] == "ResourceNotFoundException":
+            raise RuntimeError(
+                f"The requested secret {secret_name} was not found"
+            ) from e
+        elif e.response["Error"]["Code"] == "InvalidRequestException":
+            raise RuntimeError(
+                f"The request was invalid for secret '{secret_name}': {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "InvalidParameterException":
+            raise RuntimeError(
+                f"The request had invalid params for secret '{secret_name}': {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "DecryptionFailure":
+            raise RuntimeError(
+                f"The requested secret '{secret_name}' can't be decrypted using the provided KMS key: {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "InternalServiceError":
+            raise RuntimeError(
+                f"An error occurred on the service side for secret '{secret_name}': {e}"
+            ) from e
+        else:
+            raise RuntimeError(
+                f"An unexpected error occurred while retrieving the requested secret {secret_name}: {e}"
+            ) from e
 
     secret_string = get_secret_value_response["SecretString"]
     try:
