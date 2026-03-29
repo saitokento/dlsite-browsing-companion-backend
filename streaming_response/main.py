@@ -94,14 +94,18 @@ def get_api_keys():
         secret_json = json.loads(secret_data)
         openai_api_key = secret_json.get("OPENAI_API_KEY")
         if not openai_api_key:
-            raise ValueError("OPENAI_API_KEY not found in secret")
+            raise ValueError(
+                f'The requested secret {secret_name} does not contain "OPENAI_API_KEY"'
+            )
         xai_api_key = secret_json.get("XAI_API_KEY")
         if not xai_api_key:
-            raise ValueError("XAI_API_KEY not found in secret")
+            raise ValueError(
+                f'The requested secret {secret_name} does not contain "XAI_API_KEY"'
+            )
         return openai_api_key, xai_api_key
     except json.JSONDecodeError as e:
         raise ValueError(
-            "Secret must be JSON with OPENAI_API_KEY and XAI_API_KEY"
+            f"The requested secret {secret_name} must be valid JSON"
         ) from e
 
 
