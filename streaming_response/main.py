@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from decimal import Decimal
 from enum import StrEnum
@@ -109,8 +110,9 @@ def get_api_keys():
         ) from e
 
 
-table_name = os.getenv("TABLE_NAME", "dbc")
+logger = logging.getLogger(__name__)
 
+table_name = os.getenv("TABLE_NAME", "dbc")
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(table_name)
 
@@ -128,27 +130,6 @@ OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
 
 # openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
-
-
-def create_comment_prompt(work: Work):
-    if work.coupon_price is not None:
-        coupon_line = (
-            f"\nクーポン価格: {work.price_prefix}{work.coupon_price}{work.price_suffix}"
-        )
-    else:
-        coupon_line = ""
-
-    return (
-        "以下の作品情報をもとに、作品に対して短いコメントをしてください。\n"
-        "出力はコメントの本文のみにしてください。\n\n"
-        f"タイトル: {work.name}\n"
-        f"価格: {work.price_prefix}{work.price}{work.price_suffix}"
-        f"（サークル設定価格: {work.price_prefix}{work.official_price}{work.price_suffix}）"
-        f"{coupon_line}\n"
-        f"ジャンル: {', '.join(work.genres)}\n"
-        "作品内容:\n"
-        f"{work.description}"
-    )
 
 
 # async def openai_streamer(prompt: str, instructions: str):
@@ -179,28 +160,58 @@ async def xai_streamer(prompt: str, instructions: str):
         yield chunk.content
 
 
-def get_dynamodb_item(pk: str, sk: str, attribute: str):
+def get_character_item(character_id: str):
     try:
-        response = table.get_item(
-            Key={
-                "PK": pk,
-                "SK": sk,
-            }
+        response = table.get_item(Key={"character_id": character_id})
+    except ClientError as err:
+        logger.error(
+            "Couldn't get character %s from table %s. Here's why: %s: %s",
+            character_id,
+            table.name,
+            err.response["Error"]["Code"],
+            err.response["Error"]["Message"],
         )
-    except ClientError as e:
-        raise RuntimeError(f"DynamoDB get_item failed: {e}") from e
+        raise
+    else:
+        item = response.get("Item")
+        if item is None:
+            raise ValueError(f"Character not found: {character_id}")
+        return item
 
-    item = response.get("Item")
-    if not item or attribute not in item:
-        raise ValueError(f"{pk} not found for {sk}")
 
-    return item.get(attribute)
+def create_prompt(character_item, usecase, payload):
+    match usecase:
+        case Usecase.WORK:
+            if payload.work.coupon_price is not None:
+                coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
+            else:
+                coupon_line = ""
+
+            work_genres = ", ".join(payload.work.genres)
+
+            return (
+                character_item.get("prompts")
+                .get("work")
+                .format(
+                    work_name=payload.work.name,
+                    work_price_prefix=payload.work.price_prefix,
+                    work_price=payload.work.price,
+                    work_price_suffix=payload.work.price_suffix,
+                    work_official_price=payload.work.official_price,
+                    coupon_line=coupon_line,
+                    work_genres=work_genres,
+                    work_description=payload.work.description,
+                )
+            )
 
 
 @app.post("/ask")
 async def index(body: AskRequest):
-    prompt = create_comment_prompt(body.payload.work)
-    instructions = get_dynamodb_item("instructions", "default", "text")
+    character_id = "default"
+    character_item = get_character_item(character_id)
+
+    prompt = create_prompt(character_item, body.usecase, body.payload)
+    instructions = character_item.get("instructions")
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
