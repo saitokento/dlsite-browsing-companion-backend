@@ -5,11 +5,6 @@ Description: >
 
   SAM Template for dlsite-browsing-companion-backend
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 3
-
 Parameters:
   Environment:
     Type: String
