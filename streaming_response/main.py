@@ -200,7 +200,10 @@ def create_prompt(character_item, usecase, payload):
         case Usecase.WORK:
             prompt_template = prompts.get("work")
             if not prompt_template:
-                raise ValueError("Character item missing 'prompts.work'")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"'prompts.work' not found for character '{character_item.get('character_id')}' in DynamoDB",
+                )
             if payload.work.coupon_price is not None:
                 coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
             else:
@@ -224,14 +227,16 @@ def create_prompt(character_item, usecase, payload):
 
 @app.post("/ask")
 async def index(body: AskRequest):
-    character_item = get_character_item(body.character_id)
+    character_id = body.character_id
+    character_item = get_character_item(character_id)
     if character_item is None:
-        if body.character_id != CharacterId.DEFAULT:
+        if character_id != CharacterId.DEFAULT:
             logger.warning(
-                "Character '%s' not found, falling back to 'default'.",
-                body.character_id,
+                "Character '%s' not found, falling back to 'default'",
+                character_id,
             )
-            character_item = get_character_item(CharacterId.DEFAULT)
+            character_id = CharacterId.DEFAULT
+            character_item = get_character_item(character_id)
         if character_item is None:
             raise HTTPException(
                 status_code=500, detail="'default' character not found in DynamoDB"
@@ -240,7 +245,10 @@ async def index(body: AskRequest):
     prompt = create_prompt(character_item, body.usecase, body.payload)
     instructions = character_item.get("instructions")
     if not instructions:
-        raise ValueError("Character item missing 'instructions'")
+        raise HTTPException(
+            status_code=500,
+            detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
+        )
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
