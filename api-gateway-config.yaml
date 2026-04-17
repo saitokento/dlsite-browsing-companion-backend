@@ -16,7 +16,7 @@ paths:
                 propertyName: usecase
                 mapping:
                   work: "#/components/schemas/WorkRequest"
-                  # other: "#/components/schemas/OtherRequest" 
+                  # other: "#/components/schemas/OtherRequest"
       responses:
         "200":
           description: "Streaming response from agent"
@@ -135,16 +135,15 @@ components:
         - priceSuffix
         - genres
         - description
-  # OtherProperty:
-  #     type: object
-  #     properties:
-  #       ...
-  #     required:
-  #       ...
-x-amazon-apigateway-api-key-source: HEADER
-components:
+    # OtherProperty:
+    #     type: object
+    #     properties:
+    #       ...
+    #     required:
+    #       ...
   securitySchemes:
     api_key:
       type: apiKey
       name: x-api-key
       in: header
+x-amazon-apigateway-api-key-source: HEADER
