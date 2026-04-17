@@ -9,14 +9,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                usecase:
-                  type: string
-                payload:
-                  type: object
-              required:
-                - usecase
+              oneOf:
+                - $ref: "#/components/schemas/WorkRequest"
+                # - $ref: "#/components/schemas/OtherRequest"
+              discriminator:
+                propertyName: usecase
+                mapping:
+                  work: "#/components/schemas/WorkRequest"
+                  # other: "#/components/schemas/OtherRequest" 
       responses:
         "200":
           description: "Streaming response from agent"
@@ -59,6 +59,80 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
       security: []
+components:
+  schemas:
+    WorkRequest:
+      type: object
+      properties:
+        usecase:
+          type: string
+          enum: [work]
+        payload:
+          $ref: "#/components/schemas/WorkPayload"
+      required:
+        - usecase
+        - payload
+    # OtherRequest:
+    #   type: object
+    #   properties:
+    #     usecase:
+    #       type: string
+    #       enum: [other]
+    #     payload:
+    #       $ref: "#/components/schemas/OtherPayload"
+    #   required:
+    #     - usecase
+    #     - payload
+    WorkPayload:
+      type: object
+      properties:
+        work:
+          $ref: "#/components/schemas/Work"
+      required:
+        - work
+    # OtherPayload:
+    #   type: object
+    #   properties:
+    #     other_property:
+    #       $ref: "#/components/schemas/OtherProperty"
+    #   required:
+    #     - other_property
+    Work:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        officialPrice:
+          type: number
+        couponPrice:
+          type: number
+          nullable: true
+        pricePrefix:
+          type: string
+        priceSuffix:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+      required:
+        - name
+        - price
+        - officialPrice
+        - pricePrefix
+        - priceSuffix
+        - genres
+        - description
+  # OtherProperty:
+  #     type: object
+  #     properties:
+  #       ...
+  #     required:
+  #       ...
 x-amazon-apigateway-api-key-source: HEADER
 components:
   securitySchemes:

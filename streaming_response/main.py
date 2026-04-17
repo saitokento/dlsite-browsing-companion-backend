@@ -3,7 +3,7 @@ import logging
 import os
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal, Union
 
 import boto3
 from botocore.exceptions import ClientError
@@ -17,6 +17,7 @@ from xai_sdk.chat import system, user
 
 class Usecase(StrEnum):
     WORK = "work"
+    # OTHER = "other"
 
 
 class Work(BaseModel):
@@ -30,24 +31,32 @@ class Work(BaseModel):
     description: str
 
 
+# class OtherProperty(BaseModel):
+#     ...
+
+
 class WorkPayload(BaseModel):
     work: Work
 
 
-# class WorkRequest(BaseModel):
-#     usecase: Literal[Usecase.WORK]
-#     payload: WorkPayload
+# class OtherPayload(BaseModel):
+#     other_property: OtherProperty
 
 
-class AskRequest(BaseModel):
+class WorkRequest(BaseModel):
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
-# AskRequest = Annotated[
-#     WorkRequest | OtherRequest,
-#     Field(discriminator="usecase"),
-# ]
+# class OtherRequest(BaseModel):
+#     usecase: Literal[Usecase.Other]
+#     payload: OtherPayload
+
+
+AskRequest = Annotated[
+    Union[WorkRequest],  # Union[WorkRequest, OtherRequest],
+    Field(discriminator="usecase"),
+]
 
 
 def get_api_keys():
@@ -203,6 +212,8 @@ def create_prompt(character_item, usecase, payload):
                     work_description=payload.work.description,
                 )
             )
+        # case Usecase.OTHER:
+        #     ...
 
 
 @app.post("/ask")
