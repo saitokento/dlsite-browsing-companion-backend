@@ -1,27 +1,72 @@
 import json
+import logging
+import os
+from decimal import Decimal
+from enum import StrEnum
+from typing import Annotated, Literal, Union
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
 from xai_sdk import AsyncClient
-from xai_sdk.chat import user
+from xai_sdk.chat import system, user
+
+
+class CharacterId(StrEnum):
+    DEFAULT = "default"
+
+
+class Usecase(StrEnum):
+    WORK = "work"
+    # OTHER = "other"
+
+
+class Work(BaseModel):
+    name: str
+    price: Decimal
+    official_price: Decimal = Field(alias="officialPrice")
+    coupon_price: Decimal | None = Field(default=None, alias="couponPrice")
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+    genres: list[str]
+    description: str
+
+
+# class OtherProperty(BaseModel):
+#     ...
+
+
+class WorkPayload(BaseModel):
+    work: Work
+
+
+# class OtherPayload(BaseModel):
+#     other_property: OtherProperty
+
+
+class WorkRequest(BaseModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.WORK]
+    payload: WorkPayload
+
+
+# class OtherRequest(BaseModel):
+#     character_id: CharacterId
+#     usecase: Literal[Usecase.Other]
+#     payload: OtherPayload
+
+
+AskRequest = Annotated[
+    Union[WorkRequest],  # Union[WorkRequest, OtherRequest],
+    Field(discriminator="usecase"),
+]
 
 
 def get_api_keys():
-    """
-    Secrets Manager の "prod/DBC/APIKeys" から OPENAI_API_KEY と XAI_API_KEY を取得して返す。
-
-    Returns:
-        tuple[str, str]: (OPENAI_API_KEY, XAI_API_KEY) の順のタプル。
-
-    Raises:
-        RuntimeError: Secrets Manager からの取得に失敗した場合。
-        ValueError: シークレットが有効な JSON でない場合、または OPENAI_API_KEY または XAI_API_KEY が存在しない場合。
-    """
-    secret_name = "prod/DBC/APIKeys"
+    secret_name = os.getenv("SECRETS_NAME", "prod/DBC/APIKeys")
 
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager")
@@ -29,112 +74,185 @@ def get_api_keys():
     try:
         get_secret_value_response = client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
-        raise RuntimeError(
-            f"Failed to retrieve secret from Secrets Manager: {e}"
-        ) from e
+        if e.response["Error"]["Code"] == "ResourceNotFoundException":
+            raise RuntimeError(
+                f"The requested secret {secret_name} was not found"
+            ) from e
+        elif e.response["Error"]["Code"] == "InvalidRequestException":
+            raise RuntimeError(
+                f"The request was invalid for secret '{secret_name}': {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "InvalidParameterException":
+            raise RuntimeError(
+                f"The request had invalid params for secret '{secret_name}': {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "DecryptionFailure":
+            raise RuntimeError(
+                f"The requested secret '{secret_name}' can't be decrypted using the provided KMS key: {e}"
+            ) from e
+        elif e.response["Error"]["Code"] == "InternalServiceError":
+            raise RuntimeError(
+                f"An error occurred on the service side for secret '{secret_name}': {e}"
+            ) from e
+        else:
+            raise RuntimeError(
+                f"An unexpected error occurred while retrieving the requested secret {secret_name}: {e}"
+            ) from e
 
-    secret_string = get_secret_value_response["SecretString"]
+    if "SecretString" in get_secret_value_response:
+        secret_data = get_secret_value_response["SecretString"]
+    else:
+        raise ValueError(
+            f'The requested secret {secret_name} does not contain "SecretString"'
+        )
+
     try:
-        secret_json = json.loads(secret_string)
-        openai_api_key = secret_json.get("OPENAI_API_KEY")
-        if not openai_api_key:
-            raise ValueError("OPENAI_API_KEY not found in secret")
+        secret_json = json.loads(secret_data)
+        # openai_api_key = secret_json.get("OPENAI_API_KEY")
+        # if not openai_api_key:
+        #     raise ValueError(
+        #         f'The requested secret {secret_name} does not contain "OPENAI_API_KEY"'
+        #     )
         xai_api_key = secret_json.get("XAI_API_KEY")
         if not xai_api_key:
-            raise ValueError("XAI_API_KEY not found in secret")
-        return openai_api_key, xai_api_key
+            raise ValueError(
+                f'The requested secret {secret_name} does not contain "XAI_API_KEY"'
+            )
+        # return openai_api_key, xai_api_key
+        return xai_api_key
     except json.JSONDecodeError as e:
         raise ValueError(
-            "Secret must be JSON with OPENAI_API_KEY and XAI_API_KEY"
+            f"The requested secret {secret_name} must be valid JSON"
         ) from e
 
+
+logger = logging.getLogger(__name__)
+
+table_name = os.getenv("TABLE_NAME", "dbc")
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table(table_name)
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["chrome-extension://dfjadeefdlmgebcmplicghageakblbop"],
-    allow_credentials=True,
+    allow_origin_regex=r"^(chrome-extension|moz-extension)://.*$",
+    allow_credentials=False,
     allow_methods=["OPTIONS", "POST"],
-    allow_headers=["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key"],
+    allow_headers=["Content-Type", "X-Amz-Date", "X-Api-Key"],
 )
 
-OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+# OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+XAI_API_KEY = get_api_keys()
 
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+# openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
-async def openai_streamer(request: str):
-    """
-    OpenAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
+# async def openai_streamer(prompt: str, instructions: str):
+#     stream = await openai_client.responses.create(
+#         model="gpt-5-nano",
+#         input=[
+#             {"role": "developer", "content": instructions},
+#             {
+#                 "role": "user",
+#                 "content": prompt,
+#             },
+#         ],
+#         stream=True,
+#     )
+#
+#     async for event in stream:
+#         if event.type == "response.output_text.delta":
+#             yield event.delta
 
-    Parameters:
-        request (str): モデルへ送信するプロンプト。
 
-    Returns:
-        ストリームされたテキストの各チャンク（`str`）。
-    """
-    stream = await openai_client.responses.create(
-        model="gpt-5-nano",
-        input=[
-            {
-                "role": "user",
-                "content": request,
-            },
-        ],
-        stream=True,
+async def xai_streamer(prompt: str, instructions: str):
+    chat = xai_client.chat.create(
+        model="grok-4-1-fast-non-reasoning", messages=[system(instructions)]
     )
-
-    async for event in stream:
-        if event.type == "response.output_text.delta":
-            yield event.delta
-
-
-async def xai_streamer(request: str):
-    """
-    xAI APIへプロンプトを送信し、レスポンスをストリーミングで受け取ってテキストのチャンクを逐次返す。
-
-    Parameters:
-        request (str): モデルへ送信するプロンプト。
-
-    Returns:
-        ストリームされたテキストの各チャンク（`str`）。
-    """
-    chat = xai_client.chat.create(model="grok-4-1-fast-non-reasoning")
-    chat.append(user(request))
+    chat.append(user(prompt))
 
     async for _response, chunk in chat.stream():
         yield chunk.content
 
 
-@app.post("/{request_path:path}")
-async def index(request: Request):
-    # Get the JSON payload from the POST body
-    """
-    クライアントからのPOST本文に含まれるJSONの`request`フィールドを読み取り、AIからのレスポンスをテキストストリームとして返すエンドポイント処理を行う。
-
-    Parameters:
-        request (Request): JSON ボディを持つ FastAPI のリクエストオブジェクト。ボディはキー `request` を含むJSONである必要がある。
-
-    Returns:
-        StreamingResponse: AIからのレスポンスを逐次返すストリームレスポンス（media_type="text/plain"）。
-
-    Raises:
-        HTTPException: リクエストボディが有効なJSONでない場合はステータス400で発生する。
-        HTTPException: JSON に `request` キーが存在しないか空の場合はステータス400で発生する。
-    """
+def get_character_item(character_id: str):
     try:
-        payload = await request.json()
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail="Invalid JSON body") from e
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail="Failed to read request body"
-        ) from e
-    request_param = payload.get("request")
-    if not request_param:
-        raise HTTPException(status_code=400, detail="'request' is required")
+        response = table.get_item(Key={"character_id": character_id})
+    except ClientError as err:
+        logger.error(
+            "Couldn't get character %s from table %s. Here's why: %s: %s",
+            character_id,
+            table.name,
+            err.response["Error"]["Code"],
+            err.response["Error"]["Message"],
+        )
+        raise
+    else:
+        item = response.get("Item")
+        return item
 
-    # return StreamingResponse(openai_streamer(request_param), media_type="text/plain")
-    return StreamingResponse(xai_streamer(request_param), media_type="text/plain")
+
+def create_prompt(character_item, usecase, payload):
+    prompts = character_item.get("prompts") or {}
+    match usecase:
+        case Usecase.WORK:
+            prompt_template = prompts.get("work")
+            if not prompt_template:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"'prompts.work' not found for character '{character_item.get('character_id')}' in DynamoDB",
+                )
+            if payload.work.coupon_price is not None:
+                coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
+            else:
+                coupon_line = ""
+
+            work_genres = ", ".join(payload.work.genres)
+
+            return prompt_template.format(
+                work_name=payload.work.name,
+                work_price_prefix=payload.work.price_prefix,
+                work_price=payload.work.price,
+                work_price_suffix=payload.work.price_suffix,
+                work_official_price=payload.work.official_price,
+                coupon_line=coupon_line,
+                work_genres=work_genres,
+                work_description=payload.work.description,
+            )
+        # case Usecase.OTHER:
+        #     ...
+
+
+@app.post("/ask")
+async def index(body: AskRequest):
+    character_id = body.character_id
+    character_item = get_character_item(character_id)
+    if character_item is None:
+        if character_id != CharacterId.DEFAULT:
+            logger.warning(
+                "Character '%s' not found, falling back to 'default'",
+                character_id,
+            )
+            character_id = CharacterId.DEFAULT
+            character_item = get_character_item(character_id)
+        if character_item is None:
+            raise HTTPException(
+                status_code=500, detail="'default' character not found in DynamoDB"
+            )
+
+    prompt = create_prompt(character_item, body.usecase, body.payload)
+    instructions = character_item.get("instructions")
+    if not instructions:
+        raise HTTPException(
+            status_code=500,
+            detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
+        )
+
+    # return StreamingResponse(
+    #     openai_streamer(prompt, instructions), media_type="text/plain"
+    # )
+    return StreamingResponse(
+        xai_streamer(prompt, instructions), media_type="text/plain"
+    )
