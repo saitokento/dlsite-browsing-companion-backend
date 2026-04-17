@@ -194,8 +194,12 @@ def get_character_item(character_id: str):
 
 
 def create_prompt(character_item, usecase, payload):
+    prompts = character_item.get("prompts") or {}
     match usecase:
         case Usecase.WORK:
+            prompt_template = prompts.get("work")
+            if not prompt_template:
+                raise ValueError("Character item missing 'prompts.work'")
             if payload.work.coupon_price is not None:
                 coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
             else:
@@ -203,19 +207,15 @@ def create_prompt(character_item, usecase, payload):
 
             work_genres = ", ".join(payload.work.genres)
 
-            return (
-                character_item.get("prompts")
-                .get("work")
-                .format(
-                    work_name=payload.work.name,
-                    work_price_prefix=payload.work.price_prefix,
-                    work_price=payload.work.price,
-                    work_price_suffix=payload.work.price_suffix,
-                    work_official_price=payload.work.official_price,
-                    coupon_line=coupon_line,
-                    work_genres=work_genres,
-                    work_description=payload.work.description,
-                )
+            return prompt_template.format(
+                work_name=payload.work.name,
+                work_price_prefix=payload.work.price_prefix,
+                work_price=payload.work.price,
+                work_price_suffix=payload.work.price_suffix,
+                work_official_price=payload.work.official_price,
+                coupon_line=coupon_line,
+                work_genres=work_genres,
+                work_description=payload.work.description,
             )
         # case Usecase.OTHER:
         #     ...
@@ -228,6 +228,8 @@ async def index(body: AskRequest):
 
     prompt = create_prompt(character_item, body.usecase, body.payload)
     instructions = character_item.get("instructions")
+    if not instructions:
+        raise ValueError("Character item missing 'instructions'")
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
