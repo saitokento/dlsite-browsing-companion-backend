@@ -7,7 +7,7 @@ from typing import Annotated, Literal, Union
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -191,8 +191,6 @@ def get_character_item(character_id: str):
         raise
     else:
         item = response.get("Item")
-        if item is None:
-            raise ValueError(f"Character not found: {character_id}")
         return item
 
 
@@ -227,6 +225,17 @@ def create_prompt(character_item, usecase, payload):
 @app.post("/ask")
 async def index(body: AskRequest):
     character_item = get_character_item(body.character_id)
+    if character_item is None:
+        if body.character_id != CharacterId.DEFAULT:
+            logger.warning(
+                "Character '%s' not found, falling back to 'default'.",
+                body.character_id,
+            )
+            character_item = get_character_item(CharacterId.DEFAULT)
+        if character_item is None:
+            raise HTTPException(
+                status_code=500, detail="'default' character not found in DynamoDB"
+            )
 
     prompt = create_prompt(character_item, body.usecase, body.payload)
     instructions = character_item.get("instructions")
