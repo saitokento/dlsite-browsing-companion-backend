@@ -102,17 +102,18 @@ def get_api_keys():
 
     try:
         secret_json = json.loads(secret_data)
-        openai_api_key = secret_json.get("OPENAI_API_KEY")
-        if not openai_api_key:
-            raise ValueError(
-                f'The requested secret {secret_name} does not contain "OPENAI_API_KEY"'
-            )
+        # openai_api_key = secret_json.get("OPENAI_API_KEY")
+        # if not openai_api_key:
+        #     raise ValueError(
+        #         f'The requested secret {secret_name} does not contain "OPENAI_API_KEY"'
+        #     )
         xai_api_key = secret_json.get("XAI_API_KEY")
         if not xai_api_key:
             raise ValueError(
                 f'The requested secret {secret_name} does not contain "XAI_API_KEY"'
             )
-        return openai_api_key, xai_api_key
+        # return openai_api_key, xai_api_key
+        return xai_api_key
     except json.JSONDecodeError as e:
         raise ValueError(
             f"The requested secret {secret_name} must be valid JSON"
@@ -135,7 +136,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Amz-Date", "X-Api-Key"],
 )
 
-OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+# OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+XAI_API_KEY = get_api_keys()
 
 # openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 xai_client = AsyncClient(api_key=XAI_API_KEY)
