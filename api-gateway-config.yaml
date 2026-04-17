@@ -64,23 +64,31 @@ components:
     WorkRequest:
       type: object
       properties:
+        characterId:
+          type: string
+          enum: [default]
         usecase:
           type: string
           enum: [work]
         payload:
           $ref: "#/components/schemas/WorkPayload"
       required:
+        - characterId
         - usecase
         - payload
     # OtherRequest:
     #   type: object
     #   properties:
+    #     characterId:
+    #       type: string
+    #       enum: [default]
     #     usecase:
     #       type: string
     #       enum: [other]
     #     payload:
     #       $ref: "#/components/schemas/OtherPayload"
     #   required:
+    #     - characterId
     #     - usecase
     #     - payload
     WorkPayload:

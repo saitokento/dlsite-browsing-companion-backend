@@ -15,6 +15,10 @@ from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
 
 
+class CharacterId(StrEnum):
+    DEFAULT = "default"
+
+
 class Usecase(StrEnum):
     WORK = "work"
     # OTHER = "other"
@@ -44,11 +48,13 @@ class WorkPayload(BaseModel):
 
 
 class WorkRequest(BaseModel):
+    character_id: CharacterId = Field(alias="characterId")
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
 # class OtherRequest(BaseModel):
+#     character_id: CharacterId
 #     usecase: Literal[Usecase.Other]
 #     payload: OtherPayload
 
@@ -223,8 +229,7 @@ def create_prompt(character_item, usecase, payload):
 
 @app.post("/ask")
 async def index(body: AskRequest):
-    character_id = "default"
-    character_item = get_character_item(character_id)
+    character_item = get_character_item(body.character_id)
 
     prompt = create_prompt(character_item, body.usecase, body.payload)
     instructions = character_item.get("instructions")
