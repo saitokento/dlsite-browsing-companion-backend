@@ -51,6 +51,7 @@ Resources:
     Type: AWS::Serverless::Api
     DependsOn: ApiGatewayAccount
     Properties:
+      Name: !Sub "${AWS::StackName}-api"
       StageName: !Ref Environment
       EndpointConfiguration:
         Type: REGIONAL
