@@ -10,9 +10,13 @@ from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
+
+
+class ApiModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class CharacterId(StrEnum):
@@ -21,10 +25,14 @@ class CharacterId(StrEnum):
 
 class Usecase(StrEnum):
     WORK = "work"
-    # OTHER = "other"
+    HOME_HELLO = "home:hello"
+    CIRCLE_NEW = "circle:new"
+    USERBUY_PAGE1 = "userbuy:page1"
+    CART_LIST = "cart:list"
+    DOWNLOAD_LIST = "download:list"
 
 
-class Work(BaseModel):
+class Work(ApiModel):
     name: str
     price: Decimal
     official_price: Decimal = Field(alias="officialPrice")
@@ -35,32 +43,121 @@ class Work(BaseModel):
     description: str
 
 
-# class OtherProperty(BaseModel):
-#     ...
+class CircleWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    category: str
+    name: str
+    author: str | None
+    price: Decimal
+    official_price: Decimal = Field(alias="officialPrice")
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+    label: str | None
 
 
-class WorkPayload(BaseModel):
+class UserbuyWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    buy_date: str = Field(alias="buyDate")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    genres: list[str]
+    price: Decimal
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+
+
+class CartWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    category: str
+    price: Decimal
+    official_price: Decimal = Field(alias="officialPrice")
+
+
+class DownloadWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    genre: str
+
+
+class WorkPayload(ApiModel):
     work: Work
 
 
-# class OtherPayload(BaseModel):
-#     other_property: OtherProperty
+class CircleNewPayload(ApiModel):
+    maker_name: str = Field(alias="makerName")
+    circle_work_list: list[CircleWork] = Field(alias="circleWorkList")
 
 
-class WorkRequest(BaseModel):
+class UserbuyPage1Payload(ApiModel):
+    userbuy_work_list: list[UserbuyWork] = Field(alias="userbuyWorkList")
+
+
+class CartListPayload(ApiModel):
+    cart_work_list: list[CartWork] = Field(alias="cartWorkList")
+    total_discount: Decimal = Field(alias="totalDiscount")
+    total_original: Decimal | None = Field(alias="totalOriginal")
+    coupon_name: str | None = Field(alias="couponName")
+    total_coupon: Decimal | None = Field(alias="totalCoupon")
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+
+
+class DownloadListPayload(ApiModel):
+    download_work_list: list[DownloadWork] = Field(alias="downloadWorkList")
+
+
+class EmptyPayload(ApiModel):
+    pass
+
+
+class WorkRequest(ApiModel):
     character_id: CharacterId = Field(alias="characterId")
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
-# class OtherRequest(BaseModel):
-#     character_id: CharacterId
-#     usecase: Literal[Usecase.Other]
-#     payload: OtherPayload
+class HomeHelloRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.HOME_HELLO]
+    payload: EmptyPayload
+
+
+class CircleNewRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.CIRCLE_NEW]
+    payload: CircleNewPayload
+
+
+class UserbuyPage1Request(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.USERBUY_PAGE1]
+    payload: UserbuyPage1Payload
+
+
+class CartListRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.CART_LIST]
+    payload: CartListPayload
+
+
+class DownloadListRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.DOWNLOAD_LIST]
+    payload: DownloadListPayload
 
 
 AskRequest = Annotated[
-    Union[WorkRequest],  # Union[WorkRequest, OtherRequest],
+    Union[
+        WorkRequest,
+        HomeHelloRequest,
+        CircleNewRequest,
+        UserbuyPage1Request,
+        CartListRequest,
+        DownloadListRequest,
+    ],
     Field(discriminator="usecase"),
 ]
 
