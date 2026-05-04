@@ -187,6 +187,10 @@ components:
       properties:
         makerName:
           type: string
+        circleAnnounceWorkList:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircleAnnounceWork"
         circleWorkList:
           type: array
           items:
@@ -324,6 +328,31 @@ components:
         - pricePrefix
         - priceSuffix
         - labels
+
+    CircleAnnounceWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        author:
+          type: string
+          nullable: true
+        category:
+          type: string
+        expectedDate:
+          type: string
+        freeSample:
+          type: boolean
+      required:
+        - productId
+        - name
+        - author
+        - category
+        - expectedDate
+        - freeSample
 
     UserbuyWork:
       type: object

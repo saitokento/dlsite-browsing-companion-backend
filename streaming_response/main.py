@@ -56,6 +56,15 @@ class CircleWork(ApiModel):
     labels: list[str]
 
 
+class CircleAnnounceWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    author: str | None
+    category: str
+    expected_date: str = Field(alias="expectedDate")
+    free_sample: bool = Field(alias="freeSample")
+
+
 class UserbuyWork(ApiModel):
     product_id: str = Field(alias="productId")
     buy_date: str = Field(alias="buyDate")
@@ -93,6 +102,9 @@ class WorkPayload(ApiModel):
 
 class CircleNewPayload(ApiModel):
     maker_name: str = Field(alias="makerName")
+    circle_announce_work_list: list[CircleAnnounceWork] = Field(
+        alias="circleAnnounceWorkList"
+    )
     circle_work_list: list[CircleWork] = Field(alias="circleWorkList")
 
 
@@ -349,9 +361,32 @@ def create_prompt(character_item, usecase, payload):
 
         case Usecase.CIRCLE_NEW:
             prompt_template = get_prompt_template(prompts, "circle:new", character_item)
+            announce_work_list_template = get_prompt_template(
+                prompts, "circle:new:announce_work_list", character_item
+            )
             work_list_template = get_prompt_template(
                 prompts, "circle:new:work_list", character_item
             )
+
+            announce_work_list = "\n\n".join(
+                announce_work_list_template.format(
+                    name=work.name,
+                    author_line=f"\nクリエイター（シナリオ、イラスト、声優など）：{work.author}"
+                    if work.author
+                    else "",
+                    category=work.category,
+                    expected_date=work.expected_date,
+                    free_sample="\n（無料サンプルあり）" if work.free_sample else "",
+                )
+                for work in payload.circle_announce_work_list
+            )
+
+            if announce_work_list is not None:
+                announce_line = (
+                    f"---\n\n発売予告作品\n\n{announce_work_list}\n\n---\n\n"
+                )
+            else:
+                announce_line = ""
 
             work_list = "\n\n".join(
                 work_list_template.format(
@@ -371,6 +406,7 @@ def create_prompt(character_item, usecase, payload):
 
             return prompt_template.format(
                 maker_name=payload.maker_name,
+                announce_line=announce_line,
                 work_list=work_list,
             )
 
