@@ -52,7 +52,7 @@ class CircleWork(ApiModel):
     official_price: Decimal = Field(alias="officialPrice")
     price_prefix: str = Field(alias="pricePrefix")
     price_suffix: str = Field(alias="priceSuffix")
-    label: str | None
+    labels: list[str]
 
 
 class UserbuyWork(ApiModel):
@@ -305,6 +305,13 @@ def get_prompt_template(prompts, key: str, character_item):
     return prompt_template
 
 
+def format_labels(labels: list[str]):
+    if not labels:
+        return ""
+
+    return "、" + "、".join(labels)
+
+
 def create_prompt(character_item, usecase, payload):
     prompts = character_item.get("prompts") or {}
     match usecase:
@@ -351,7 +358,7 @@ def create_prompt(character_item, usecase, payload):
                     price=work.price,
                     price_suffix=work.price_suffix,
                     official_price=work.official_price,
-                    label=work.label or "",
+                    labels=format_labels(work.labels),
                 )
                 for work in payload.circle_work_list
             )

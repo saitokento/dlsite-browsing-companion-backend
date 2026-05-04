@@ -308,9 +308,10 @@ components:
           type: string
         priceSuffix:
           type: string
-        label:
-          type: string
-          nullable: true
+        labels:
+          type: array
+          items:
+            type: string
       required:
         - productId
         - category
@@ -320,7 +321,7 @@ components:
         - officialPrice
         - pricePrefix
         - priceSuffix
-        - label
+        - labels
 
     UserbuyWork:
       type: object
