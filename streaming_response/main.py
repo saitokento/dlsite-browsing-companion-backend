@@ -351,7 +351,7 @@ def create_prompt(character_item, usecase, payload):
                 prompts, "circle:new:work_list", character_item
             )
 
-            work_list = "".join(
+            work_list = "\n\n".join(
                 work_list_template.format(
                     name=work.name,
                     author_line=f"\nクリエイター（シナリオ、イラスト、声優など）：{work.author}"
@@ -380,7 +380,7 @@ def create_prompt(character_item, usecase, payload):
                 prompts, "userbuy:page1:work_list", character_item
             )
 
-            work_list = "".join(
+            work_list = "\n\n".join(
                 work_list_template.format(
                     buy_date=work.buy_date,
                     name=work.name,
@@ -401,7 +401,7 @@ def create_prompt(character_item, usecase, payload):
                 prompts, "cart:list:work_list", character_item
             )
 
-            work_list = "".join(
+            work_list = "\n\n".join(
                 work_list_template.format(
                     name=work.name,
                     maker_name=work.maker_name,
@@ -424,7 +424,7 @@ def create_prompt(character_item, usecase, payload):
                 prompts, "download:list:work_list", character_item
             )
 
-            work_list = "".join(
+            work_list = "\n\n".join(
                 work_list_template.format(
                     name=work.name,
                     maker_name=work.maker_name,
