@@ -260,6 +260,8 @@ components:
       properties:
         name:
           type: string
+        makerName:
+          type: string
         price:
           type: string
         officialPrice:

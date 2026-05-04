@@ -34,6 +34,7 @@ class Usecase(StrEnum):
 
 class Work(ApiModel):
     name: str
+    maker_name: str = Field(alias="makerName")
     price: Decimal
     official_price: Decimal = Field(alias="officialPrice")
     coupon_price: Decimal | None = Field(default=None, alias="couponPrice")
@@ -323,7 +324,7 @@ def create_prompt(character_item, usecase, payload):
             prompt_template = get_prompt_template(prompts, "work", character_item)
 
             if payload.work.coupon_price is not None:
-                coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
+                coupon_line = f"\nクーポン利用価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
             else:
                 coupon_line = ""
 
@@ -331,6 +332,7 @@ def create_prompt(character_item, usecase, payload):
 
             return prompt_template.format(
                 work_name=payload.work.name,
+                maker_name=payload.work.maker_name,
                 work_price_prefix=payload.work.price_prefix,
                 work_price=payload.work.price,
                 work_price_suffix=payload.work.price_suffix,
@@ -471,6 +473,7 @@ async def index(body: AskRequest):
             status_code=500,
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
+    print(prompt)
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
