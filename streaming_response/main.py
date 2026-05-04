@@ -414,7 +414,18 @@ def create_prompt(character_item, usecase, payload):
                 for work in payload.cart_work_list
             )
 
-            return prompt_template.format(work_list=work_list)
+            if payload.coupon_name is not None and payload.total_coupon is not None:
+                coupon_line = f"\n利用可能なクーポン：{payload.coupon_name}\nクーポン利用価格：{payload.price_prefix}{payload.total_coupon}{payload.price_suffix}"
+            else:
+                coupon_line = ""
+
+            return prompt_template.format(
+                work_list=work_list,
+                price_prefix=payload.price_prefix,
+                total_discount=payload.total_discount,
+                price_suffix=payload.price_suffix,
+                coupon_line=coupon_line,
+            )
 
         case Usecase.DOWNLOAD_LIST:
             prompt_template = get_prompt_template(
