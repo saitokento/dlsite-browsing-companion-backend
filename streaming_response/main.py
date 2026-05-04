@@ -291,16 +291,22 @@ def get_character_item(character_id: str):
         return item
 
 
+def get_prompt_template(prompts, key: str, character_item):
+    prompt_template = prompts.get(key)
+    if not prompt_template:
+        raise HTTPException(
+            status_code=500,
+            detail=f"'prompts.{key}' not found for character '{character_item.get('character_id')}' in DynamoDB",
+        )
+    return prompt_template
+
+
 def create_prompt(character_item, usecase, payload):
     prompts = character_item.get("prompts") or {}
     match usecase:
         case Usecase.WORK:
-            prompt_template = prompts.get("work")
-            if not prompt_template:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"'prompts.work' not found for character '{character_item.get('character_id')}' in DynamoDB",
-                )
+            prompt_template = get_prompt_template(prompts, "work", character_item)
+
             if payload.work.coupon_price is not None:
                 coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
             else:
@@ -318,8 +324,99 @@ def create_prompt(character_item, usecase, payload):
                 work_genres=work_genres,
                 work_description=payload.work.description,
             )
-        # case Usecase.OTHER:
-        #     ...
+
+        case Usecase.HOME_HELLO:
+            return get_prompt_template(prompts, "home:hello", character_item)
+
+        case Usecase.CIRCLE_NEW:
+            prompt_template = get_prompt_template(prompts, "circle:new", character_item)
+            work_list_template = get_prompt_template(
+                prompts, "circle:new:work_list", character_item
+            )
+
+            work_list = "".join(
+                work_list_template.format(
+                    name=work.name,
+                    author_line=f"\nクリエイター（シナリオ、イラスト、声優など）：{work.author}"
+                    if work.author
+                    else "",
+                    category=work.category,
+                    price_prefix=work.price_prefix,
+                    price=work.price,
+                    price_suffix=work.price_suffix,
+                    official_price=work.official_price,
+                    label=work.label or "",
+                )
+                for work in payload.circle_work_list
+            )
+
+            return prompt_template.format(
+                maker_name=payload.maker_name,
+                work_list=work_list,
+            )
+
+        case Usecase.USERBUY_PAGE1:
+            prompt_template = get_prompt_template(
+                prompts, "userbuy:page1", character_item
+            )
+            work_list_template = get_prompt_template(
+                prompts, "userbuy:page1:work_list", character_item
+            )
+
+            work_list = "".join(
+                work_list_template.format(
+                    buy_date=work.buy_date,
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    genres=", ".join(work.genres),
+                    price_prefix=work.price_prefix,
+                    price=work.price,
+                    price_suffix=work.price_suffix,
+                )
+                for work in payload.userbuy_work_list
+            )
+
+            return prompt_template.format(work_list=work_list)
+
+        case Usecase.CART_LIST:
+            prompt_template = get_prompt_template(prompts, "cart:list", character_item)
+            work_list_template = get_prompt_template(
+                prompts, "cart:list:work_list", character_item
+            )
+
+            work_list = "".join(
+                work_list_template.format(
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    category=work.category,
+                    price_prefix=payload.price_prefix,
+                    price=work.price,
+                    price_suffix=payload.price_suffix,
+                    official_price=work.official_price,
+                )
+                for work in payload.cart_work_list
+            )
+
+            return prompt_template.format(work_list=work_list)
+
+        case Usecase.DOWNLOAD_LIST:
+            prompt_template = get_prompt_template(
+                prompts, "download:list", character_item
+            )
+            work_list_template = get_prompt_template(
+                prompts, "download:list:work_list", character_item
+            )
+
+            work_list = "".join(
+                work_list_template.format(
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    genre=work.genre,
+                )
+                for work in payload.download_work_list
+            )
+
+            return prompt_template.format(work_list=work_list)
 
 
 @app.post("/ask")
