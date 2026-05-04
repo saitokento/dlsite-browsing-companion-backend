@@ -82,6 +82,10 @@ class DownloadWork(ApiModel):
     genre: str
 
 
+class HomeHelloPayload(ApiModel):
+    floor: str
+
+
 class WorkPayload(ApiModel):
     work: Work
 
@@ -122,7 +126,7 @@ class WorkRequest(ApiModel):
 class HomeHelloRequest(ApiModel):
     character_id: CharacterId = Field(alias="characterId")
     usecase: Literal[Usecase.HOME_HELLO]
-    payload: EmptyPayload
+    payload: HomeHelloPayload
 
 
 class CircleNewRequest(ApiModel):
@@ -326,7 +330,9 @@ def create_prompt(character_item, usecase, payload):
             )
 
         case Usecase.HOME_HELLO:
-            return get_prompt_template(prompts, "home:hello", character_item)
+            prompt_template = get_prompt_template(prompts, "home:hello", character_item)
+
+            return prompt_template.format(floor=payload.floor)
 
         case Usecase.CIRCLE_NEW:
             prompt_template = get_prompt_template(prompts, "circle:new", character_item)

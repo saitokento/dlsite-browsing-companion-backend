@@ -61,6 +61,23 @@ paths:
       security: []
 components:
   schemas:
+    HomeHelloRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["home:hello"]
+        payload:
+          $ref: "#/components/schemas/HomeHelloPayload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
     WorkRequest:
       type: object
       additionalProperties: false
@@ -73,23 +90,6 @@ components:
           enum: ["work"]
         payload:
           $ref: "#/components/schemas/WorkPayload"
-      required:
-        - characterId
-        - usecase
-        - payload
-
-    HomeHelloRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        characterId:
-          type: string
-          enum: ["default"]
-        usecase:
-          type: string
-          enum: ["home:hello"]
-        payload:
-          $ref: "#/components/schemas/EmptyPayload"
       required:
         - characterId
         - usecase
@@ -162,6 +162,15 @@ components:
         - characterId
         - usecase
         - payload
+
+    HomeHelloPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        floor:
+          type: string
+      required:
+        - floor
 
     WorkPayload:
       type: object
