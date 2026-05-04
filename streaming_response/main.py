@@ -305,6 +305,10 @@ def get_prompt_template(prompts, key: str, character_item):
     return prompt_template
 
 
+def quote_markdown(markdown: str) -> str:
+    return "\n".join(f"> {line}" for line in markdown.splitlines())
+
+
 def format_labels(labels: list[str]):
     if not labels:
         return ""
@@ -333,7 +337,7 @@ def create_prompt(character_item, usecase, payload):
                 work_official_price=payload.work.official_price,
                 coupon_line=coupon_line,
                 work_genres=work_genres,
-                work_description=payload.work.description,
+                work_description=quote_markdown(payload.work.description),
             )
 
         case Usecase.HOME_HELLO:
