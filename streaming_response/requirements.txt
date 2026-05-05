@@ -1,5 +1,5 @@
 fastapi==0.136.1
 uvicorn==0.46.0
 # openai==2.18.0
-boto3==1.42.90
+boto3==1.43.3
 xai_sdk==1.12.1
