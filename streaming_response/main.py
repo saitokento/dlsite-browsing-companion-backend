@@ -242,8 +242,8 @@ def get_api_keys():
 
 logger = logging.getLogger(__name__)
 
-environment = os.getenv("ENVIRONMENT", "Prod")
-log_level = logging.DEBUG if environment == "Dev" else logging.INFO
+environment = os.getenv("ENVIRONMENT", "prod").strip().lower()
+log_level = logging.DEBUG if environment == "dev" else logging.INFO
 
 logging.getLogger().setLevel(log_level)
 logger.setLevel(log_level)
