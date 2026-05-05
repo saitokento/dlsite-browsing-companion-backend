@@ -198,10 +198,12 @@ components:
           type: string
         circleAnnounceWorkList:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/CircleAnnounceWork"
         circleWorkList:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/CircleWork"
       required:
@@ -215,6 +217,7 @@ components:
       properties:
         userbuyWorkList:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/UserbuyWork"
       required:
@@ -226,6 +229,7 @@ components:
       properties:
         cartWorkList:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/CartWork"
         totalDiscount:
@@ -258,6 +262,7 @@ components:
       properties:
         downloadWorkList:
           type: array
+          maxItems: 100
           items:
             $ref: "#/components/schemas/DownloadWork"
       required:

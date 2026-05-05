@@ -103,17 +103,20 @@ class WorkPayload(ApiModel):
 class CircleNewPayload(ApiModel):
     maker_name: str = Field(alias="makerName")
     circle_announce_work_list: list[CircleAnnounceWork] = Field(
-        alias="circleAnnounceWorkList"
+        alias="circleAnnounceWorkList", max_length=100
     )
-    circle_work_list: list[CircleWork] = Field(alias="circleWorkList")
+    circle_work_list: list[CircleWork] = Field(alias="circleWorkList", max_length=100)
 
 
 class UserbuyPage1Payload(ApiModel):
-    userbuy_work_list: list[UserbuyWork] = Field(alias="userbuyWorkList")
+    userbuy_work_list: list[UserbuyWork] = Field(
+        alias="userbuyWorkList",
+        max_length=100,  # 拡張機能側での購入履歴管理を実装したら増やすことも検討
+    )
 
 
 class CartListPayload(ApiModel):
-    cart_work_list: list[CartWork] = Field(alias="cartWorkList")
+    cart_work_list: list[CartWork] = Field(alias="cartWorkList", max_length=100)
     total_discount: Decimal = Field(alias="totalDiscount")
     total_original: Decimal | None = Field(alias="totalOriginal")
     coupon_name: str | None = Field(alias="couponName")
@@ -123,7 +126,9 @@ class CartListPayload(ApiModel):
 
 
 class DownloadListPayload(ApiModel):
-    download_work_list: list[DownloadWork] = Field(alias="downloadWorkList")
+    download_work_list: list[DownloadWork] = Field(
+        alias="downloadWorkList", max_length=100
+    )
 
 
 class EmptyPayload(ApiModel):
