@@ -90,6 +90,7 @@ Resources:
           PORT: 8000
           SECRETS_NAME: !Ref SecretsName
           TABLE_NAME: !Ref TableName
+          ENVIRONMENT: !Ref Environment
       Layers:
         - !Sub arn:aws:lambda:${AWS::Region}:753240598075:layer:LambdaAdapterLayerX86:25
       Policies:

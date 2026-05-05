@@ -10,13 +10,22 @@ paths:
           application/json:
             schema:
               oneOf:
+                - $ref: "#/components/schemas/HomeHelloRequest"
                 - $ref: "#/components/schemas/WorkRequest"
-                # - $ref: "#/components/schemas/OtherRequest"
+                - $ref: "#/components/schemas/CircleNewRequest"
+                - $ref: "#/components/schemas/UserbuyPage1Request"
+                - $ref: "#/components/schemas/CartListRequest"
+                - $ref: "#/components/schemas/DownloadListRequest"
               discriminator:
                 propertyName: usecase
                 mapping:
-                  work: "#/components/schemas/WorkRequest"
-                  # other: "#/components/schemas/OtherRequest"
+                  "home:hello": "#/components/schemas/HomeHelloRequest"
+                  "work": "#/components/schemas/WorkRequest"
+                  "circle:new": "#/components/schemas/CircleNewRequest"
+                  "userbuy:page1": "#/components/schemas/UserbuyPage1Request"
+                  "cart:list": "#/components/schemas/CartListRequest"
+                  "download:list": "#/components/schemas/DownloadListRequest"
+
       responses:
         "200":
           description: "Streaming response from agent"
@@ -61,54 +70,216 @@ paths:
       security: []
 components:
   schemas:
-    WorkRequest:
+    HomeHelloRequest:
       type: object
+      additionalProperties: false
       properties:
         characterId:
           type: string
-          enum: [default]
+          enum: ["default"]
         usecase:
           type: string
-          enum: [work]
+          enum: ["home:hello"]
+        payload:
+          $ref: "#/components/schemas/HomeHelloPayload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
+    WorkRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["work"]
         payload:
           $ref: "#/components/schemas/WorkPayload"
       required:
         - characterId
         - usecase
         - payload
-    # OtherRequest:
-    #   type: object
-    #   properties:
-    #     characterId:
-    #       type: string
-    #       enum: [default]
-    #     usecase:
-    #       type: string
-    #       enum: [other]
-    #     payload:
-    #       $ref: "#/components/schemas/OtherPayload"
-    #   required:
-    #     - characterId
-    #     - usecase
-    #     - payload
+
+    CircleNewRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["circle:new"]
+        payload:
+          $ref: "#/components/schemas/CircleNewPayload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
+    UserbuyPage1Request:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["userbuy:page1"]
+        payload:
+          $ref: "#/components/schemas/UserbuyPage1Payload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
+    CartListRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["cart:list"]
+        payload:
+          $ref: "#/components/schemas/CartListPayload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
+    DownloadListRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        characterId:
+          type: string
+          enum: ["default"]
+        usecase:
+          type: string
+          enum: ["download:list"]
+        payload:
+          $ref: "#/components/schemas/DownloadListPayload"
+      required:
+        - characterId
+        - usecase
+        - payload
+
+    HomeHelloPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        floor:
+          type: string
+      required:
+        - floor
+
     WorkPayload:
       type: object
+      additionalProperties: false
       properties:
         work:
           $ref: "#/components/schemas/Work"
       required:
         - work
-    # OtherPayload:
+
+    CircleNewPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        makerName:
+          type: string
+        circleAnnounceWorkList:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CircleAnnounceWork"
+        circleWorkList:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CircleWork"
+      required:
+        - makerName
+        - circleAnnounceWorkList
+        - circleWorkList
+
+    UserbuyPage1Payload:
+      type: object
+      additionalProperties: false
+      properties:
+        userbuyWorkList:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/UserbuyWork"
+      required:
+        - userbuyWorkList
+
+    CartListPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        cartWorkList:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CartWork"
+        totalDiscount:
+          type: number
+        totalOriginal:
+          type: number
+          nullable: true
+        couponName:
+          type: string
+          nullable: true
+        totalCoupon:
+          type: number
+          nullable: true
+        pricePrefix:
+          type: string
+        priceSuffix:
+          type: string
+      required:
+        - cartWorkList
+        - totalDiscount
+        - totalOriginal
+        - couponName
+        - totalCoupon
+        - pricePrefix
+        - priceSuffix
+
+    DownloadListPayload:
+      type: object
+      additionalProperties: false
+      properties:
+        downloadWorkList:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/DownloadWork"
+      required:
+        - downloadWorkList
+
+    # EmptyPayload:
     #   type: object
-    #   properties:
-    #     other_property:
-    #       $ref: "#/components/schemas/OtherProperty"
-    #   required:
-    #     - other_property
+    #   additionalProperties: false
+    #   maxProperties: 0
+
     Work:
       type: object
+      additionalProperties: false
       properties:
         name:
+          type: string
+        makerName:
           type: string
         price:
           type: number
@@ -129,18 +300,148 @@ components:
           type: string
       required:
         - name
+        - makerName
         - price
         - officialPrice
         - pricePrefix
         - priceSuffix
         - genres
         - description
-    # OtherProperty:
-    #     type: object
-    #     properties:
-    #       ...
-    #     required:
-    #       ...
+
+    CircleWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        category:
+          type: string
+        name:
+          type: string
+        author:
+          type: string
+          nullable: true
+        price:
+          type: number
+        officialPrice:
+          type: number
+        pricePrefix:
+          type: string
+        priceSuffix:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+      required:
+        - productId
+        - category
+        - name
+        - author
+        - price
+        - officialPrice
+        - pricePrefix
+        - priceSuffix
+        - labels
+
+    CircleAnnounceWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        author:
+          type: string
+          nullable: true
+        category:
+          type: string
+        expectedDate:
+          type: string
+        freeSample:
+          type: boolean
+      required:
+        - productId
+        - name
+        - author
+        - category
+        - expectedDate
+        - freeSample
+
+    UserbuyWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        buyDate:
+          type: string
+        name:
+          type: string
+        makerName:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        price:
+          type: number
+        pricePrefix:
+          type: string
+        priceSuffix:
+          type: string
+      required:
+        - productId
+        - buyDate
+        - name
+        - makerName
+        - genres
+        - price
+        - pricePrefix
+        - priceSuffix
+
+    CartWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        makerName:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        officialPrice:
+          type: number
+      required:
+        - productId
+        - name
+        - makerName
+        - category
+        - price
+        - officialPrice
+
+    DownloadWork:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        makerName:
+          type: string
+        genre:
+          type: string
+      required:
+        - productId
+        - name
+        - makerName
+        - genre
   securitySchemes:
     api_key:
       type: apiKey

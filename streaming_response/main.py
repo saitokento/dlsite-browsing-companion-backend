@@ -10,9 +10,13 @@ from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
+
+
+class ApiModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class CharacterId(StrEnum):
@@ -21,11 +25,16 @@ class CharacterId(StrEnum):
 
 class Usecase(StrEnum):
     WORK = "work"
-    # OTHER = "other"
+    HOME_HELLO = "home:hello"
+    CIRCLE_NEW = "circle:new"
+    USERBUY_PAGE1 = "userbuy:page1"
+    CART_LIST = "cart:list"
+    DOWNLOAD_LIST = "download:list"
 
 
-class Work(BaseModel):
+class Work(ApiModel):
     name: str
+    maker_name: str = Field(alias="makerName")
     price: Decimal
     official_price: Decimal = Field(alias="officialPrice")
     coupon_price: Decimal | None = Field(default=None, alias="couponPrice")
@@ -35,32 +44,142 @@ class Work(BaseModel):
     description: str
 
 
-# class OtherProperty(BaseModel):
-#     ...
+class CircleWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    category: str
+    name: str
+    author: str | None
+    price: Decimal
+    official_price: Decimal = Field(alias="officialPrice")
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+    labels: list[str]
 
 
-class WorkPayload(BaseModel):
+class CircleAnnounceWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    author: str | None
+    category: str
+    expected_date: str = Field(alias="expectedDate")
+    free_sample: bool = Field(alias="freeSample")
+
+
+class UserbuyWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    buy_date: str = Field(alias="buyDate")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    genres: list[str]
+    price: Decimal
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+
+
+class CartWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    category: str
+    price: Decimal
+    official_price: Decimal = Field(alias="officialPrice")
+
+
+class DownloadWork(ApiModel):
+    product_id: str = Field(alias="productId")
+    name: str
+    maker_name: str = Field(alias="makerName")
+    genre: str
+
+
+class HomeHelloPayload(ApiModel):
+    floor: str
+
+
+class WorkPayload(ApiModel):
     work: Work
 
 
-# class OtherPayload(BaseModel):
-#     other_property: OtherProperty
+class CircleNewPayload(ApiModel):
+    maker_name: str = Field(alias="makerName")
+    circle_announce_work_list: list[CircleAnnounceWork] = Field(
+        alias="circleAnnounceWorkList", max_length=100
+    )
+    circle_work_list: list[CircleWork] = Field(alias="circleWorkList", max_length=100)
 
 
-class WorkRequest(BaseModel):
+class UserbuyPage1Payload(ApiModel):
+    userbuy_work_list: list[UserbuyWork] = Field(
+        alias="userbuyWorkList",
+        max_length=100,  # 拡張機能側での購入履歴管理を実装したら増やすことも検討
+    )
+
+
+class CartListPayload(ApiModel):
+    cart_work_list: list[CartWork] = Field(alias="cartWorkList", max_length=100)
+    total_discount: Decimal = Field(alias="totalDiscount")
+    total_original: Decimal | None = Field(alias="totalOriginal")
+    coupon_name: str | None = Field(alias="couponName")
+    total_coupon: Decimal | None = Field(alias="totalCoupon")
+    price_prefix: str = Field(alias="pricePrefix")
+    price_suffix: str = Field(alias="priceSuffix")
+
+
+class DownloadListPayload(ApiModel):
+    download_work_list: list[DownloadWork] = Field(
+        alias="downloadWorkList", max_length=100
+    )
+
+
+# class EmptyPayload(ApiModel):
+#     pass
+
+
+class WorkRequest(ApiModel):
     character_id: CharacterId = Field(alias="characterId")
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
-# class OtherRequest(BaseModel):
-#     character_id: CharacterId
-#     usecase: Literal[Usecase.Other]
-#     payload: OtherPayload
+class HomeHelloRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.HOME_HELLO]
+    payload: HomeHelloPayload
+
+
+class CircleNewRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.CIRCLE_NEW]
+    payload: CircleNewPayload
+
+
+class UserbuyPage1Request(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.USERBUY_PAGE1]
+    payload: UserbuyPage1Payload
+
+
+class CartListRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.CART_LIST]
+    payload: CartListPayload
+
+
+class DownloadListRequest(ApiModel):
+    character_id: CharacterId = Field(alias="characterId")
+    usecase: Literal[Usecase.DOWNLOAD_LIST]
+    payload: DownloadListPayload
 
 
 AskRequest = Annotated[
-    Union[WorkRequest],  # Union[WorkRequest, OtherRequest],
+    Union[
+        WorkRequest,
+        HomeHelloRequest,
+        CircleNewRequest,
+        UserbuyPage1Request,
+        CartListRequest,
+        DownloadListRequest,
+    ],
     Field(discriminator="usecase"),
 ]
 
@@ -128,6 +247,12 @@ def get_api_keys():
 
 logger = logging.getLogger(__name__)
 
+environment = os.getenv("ENVIRONMENT", "prod").strip().lower()
+log_level = logging.DEBUG if environment == "dev" else logging.INFO
+
+logging.getLogger().setLevel(log_level)
+logger.setLevel(log_level)
+
 table_name = os.getenv("TABLE_NAME", "dbc")
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(table_name)
@@ -194,18 +319,35 @@ def get_character_item(character_id: str):
         return item
 
 
+def get_prompt_template(prompts, key: str, character_item):
+    prompt_template = prompts.get(key)
+    if not prompt_template:
+        raise HTTPException(
+            status_code=500,
+            detail=f"'prompts.{key}' not found for character '{character_item.get('character_id')}' in DynamoDB",
+        )
+    return prompt_template
+
+
+def quote_markdown(markdown: str) -> str:
+    return "\n".join(f"> {line}" for line in markdown.splitlines())
+
+
+def format_labels(labels: list[str]):
+    if not labels:
+        return ""
+
+    return "、" + "、".join(labels)
+
+
 def create_prompt(character_item, usecase, payload):
     prompts = character_item.get("prompts") or {}
     match usecase:
         case Usecase.WORK:
-            prompt_template = prompts.get("work")
-            if not prompt_template:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"'prompts.work' not found for character '{character_item.get('character_id')}' in DynamoDB",
-                )
+            prompt_template = get_prompt_template(prompts, "work", character_item)
+
             if payload.work.coupon_price is not None:
-                coupon_line = f"\nクーポン価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
+                coupon_line = f"\nクーポン利用価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
             else:
                 coupon_line = ""
 
@@ -213,16 +355,145 @@ def create_prompt(character_item, usecase, payload):
 
             return prompt_template.format(
                 work_name=payload.work.name,
+                maker_name=payload.work.maker_name,
                 work_price_prefix=payload.work.price_prefix,
                 work_price=payload.work.price,
                 work_price_suffix=payload.work.price_suffix,
                 work_official_price=payload.work.official_price,
                 coupon_line=coupon_line,
                 work_genres=work_genres,
-                work_description=payload.work.description,
+                work_description=quote_markdown(payload.work.description),
             )
-        # case Usecase.OTHER:
-        #     ...
+
+        case Usecase.HOME_HELLO:
+            prompt_template = get_prompt_template(prompts, "home:hello", character_item)
+
+            return prompt_template.format(floor=payload.floor)
+
+        case Usecase.CIRCLE_NEW:
+            prompt_template = get_prompt_template(prompts, "circle:new", character_item)
+            announce_work_list_template = get_prompt_template(
+                prompts, "circle:new:announce_work_list", character_item
+            )
+            work_list_template = get_prompt_template(
+                prompts, "circle:new:work_list", character_item
+            )
+
+            announce_work_list = "\n\n".join(
+                announce_work_list_template.format(
+                    name=work.name,
+                    author_line=f"\nクリエイター（シナリオ、イラスト、声優など）：{work.author}"
+                    if work.author
+                    else "",
+                    category=work.category,
+                    expected_date=work.expected_date,
+                    free_sample="\n（無料サンプルあり）" if work.free_sample else "",
+                )
+                for work in payload.circle_announce_work_list
+            )
+
+            if payload.circle_announce_work_list:
+                announce_line = (
+                    f"---\n\n発売予告作品\n\n{announce_work_list}\n\n---\n\n"
+                )
+            else:
+                announce_line = ""
+
+            work_list = "\n\n".join(
+                work_list_template.format(
+                    name=work.name,
+                    author_line=f"\nクリエイター（シナリオ、イラスト、声優など）：{work.author}"
+                    if work.author
+                    else "",
+                    category=work.category,
+                    price_prefix=work.price_prefix,
+                    price=work.price,
+                    price_suffix=work.price_suffix,
+                    official_price=work.official_price,
+                    labels=format_labels(work.labels),
+                )
+                for work in payload.circle_work_list
+            )
+
+            return prompt_template.format(
+                maker_name=payload.maker_name,
+                announce_line=announce_line,
+                work_list=work_list,
+            )
+
+        case Usecase.USERBUY_PAGE1:
+            prompt_template = get_prompt_template(
+                prompts, "userbuy:page1", character_item
+            )
+            work_list_template = get_prompt_template(
+                prompts, "userbuy:page1:work_list", character_item
+            )
+
+            work_list = "\n\n".join(
+                work_list_template.format(
+                    buy_date=work.buy_date,
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    genres=", ".join(work.genres),
+                    price_prefix=work.price_prefix,
+                    price=work.price,
+                    price_suffix=work.price_suffix,
+                )
+                for work in payload.userbuy_work_list
+            )
+
+            return prompt_template.format(work_list=work_list)
+
+        case Usecase.CART_LIST:
+            prompt_template = get_prompt_template(prompts, "cart:list", character_item)
+            work_list_template = get_prompt_template(
+                prompts, "cart:list:work_list", character_item
+            )
+
+            work_list = "\n\n".join(
+                work_list_template.format(
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    category=work.category,
+                    price_prefix=payload.price_prefix,
+                    price=work.price,
+                    price_suffix=payload.price_suffix,
+                    official_price=work.official_price,
+                )
+                for work in payload.cart_work_list
+            )
+
+            if payload.coupon_name is not None and payload.total_coupon is not None:
+                coupon_line = f"\n利用可能なクーポン：{payload.coupon_name}\nクーポン利用価格：{payload.price_prefix}{payload.total_coupon}{payload.price_suffix}"
+            else:
+                coupon_line = ""
+
+            return prompt_template.format(
+                work_list=work_list,
+                price_prefix=payload.price_prefix,
+                total_discount=payload.total_discount,
+                price_suffix=payload.price_suffix,
+                coupon_line=coupon_line,
+            )
+
+        case Usecase.DOWNLOAD_LIST:
+            prompt_template = get_prompt_template(
+                prompts, "download:list", character_item
+            )
+            work_list_template = get_prompt_template(
+                prompts, "download:list:work_list", character_item
+            )
+
+            work_list = "\n\n".join(
+                work_list_template.format(
+                    name=work.name,
+                    maker_name=work.maker_name,
+                    genre=work.genre,
+                )
+                for work in payload.download_work_list
+            )
+
+            return prompt_template.format(work_list=work_list)
 
 
 @app.post("/ask")
@@ -249,6 +520,7 @@ async def index(body: AskRequest):
             status_code=500,
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
+    logger.debug(prompt)
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
