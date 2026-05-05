@@ -19,12 +19,12 @@ paths:
               discriminator:
                 propertyName: usecase
                 mapping:
-                  home:hello: "#/components/schemas/HomeHelloRequest"
-                  work: "#/components/schemas/WorkRequest"
-                  circle:new: "#/components/schemas/CircleNewRequest"
-                  userbuy:page1: "#/components/schemas/UserbuyPage1Request"
-                  cart:list: "#/components/schemas/CartListRequest"
-                  download:list: "#/components/schemas/DownloadListRequest"
+                  "home:hello": "#/components/schemas/HomeHelloRequest"
+                  "work": "#/components/schemas/WorkRequest"
+                  "circle:new": "#/components/schemas/CircleNewRequest"
+                  "userbuy:page1": "#/components/schemas/UserbuyPage1Request"
+                  "cart:list": "#/components/schemas/CartListRequest"
+                  "download:list": "#/components/schemas/DownloadListRequest"
 
       responses:
         "200":
