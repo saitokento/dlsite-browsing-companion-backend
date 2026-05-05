@@ -268,10 +268,10 @@ components:
       required:
         - downloadWorkList
 
-    EmptyPayload:
-      type: object
-      additionalProperties: false
-      maxProperties: 0
+    # EmptyPayload:
+    #   type: object
+    #   additionalProperties: false
+    #   maxProperties: 0
 
     Work:
       type: object

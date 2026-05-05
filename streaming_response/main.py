@@ -131,8 +131,8 @@ class DownloadListPayload(ApiModel):
     )
 
 
-class EmptyPayload(ApiModel):
-    pass
+# class EmptyPayload(ApiModel):
+#     pass
 
 
 class WorkRequest(ApiModel):
