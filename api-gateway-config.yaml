@@ -206,6 +206,7 @@ components:
             $ref: "#/components/schemas/CircleWork"
       required:
         - makerName
+        - circleAnnounceWorkList
         - circleWorkList
 
     UserbuyPage1Payload:
@@ -294,9 +295,9 @@ components:
           type: string
       required:
         - name
+        - makerName
         - price
         - officialPrice
-        - couponPrice
         - pricePrefix
         - priceSuffix
         - genres
