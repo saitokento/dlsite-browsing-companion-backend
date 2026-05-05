@@ -10,13 +10,22 @@ paths:
           application/json:
             schema:
               oneOf:
+                - $ref: "#/components/schemas/HomeHelloRequest"
                 - $ref: "#/components/schemas/WorkRequest"
-                # - $ref: "#/components/schemas/OtherRequest"
+                - $ref: "#/components/schemas/CircleNewRequest"
+                - $ref: "#/components/schemas/UserbuyPage1Request"
+                - $ref: "#/components/schemas/CartListRequest"
+                - $ref: "#/components/schemas/DownloadListRequest"
               discriminator:
                 propertyName: usecase
                 mapping:
+                  home:hello: "#/components/schemas/HomeHelloRequest"
                   work: "#/components/schemas/WorkRequest"
-                  # other: "#/components/schemas/OtherRequest"
+                  circle:new: "#/components/schemas/CircleNewRequest"
+                  userbuy:page1: "#/components/schemas/UserbuyPage1Request"
+                  cart:list: "#/components/schemas/CartListRequest"
+                  download:list: "#/components/schemas/DownloadListRequest"
+
       responses:
         "200":
           description: "Streaming response from agent"
