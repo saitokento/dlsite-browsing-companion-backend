@@ -229,15 +229,15 @@ components:
           items:
             $ref: "#/components/schemas/CartWork"
         totalDiscount:
-          type: string
+          type: number
         totalOriginal:
-          type: string
+          type: number
           nullable: true
         couponName:
           type: string
           nullable: true
         totalCoupon:
-          type: string
+          type: number
           nullable: true
         pricePrefix:
           type: string
@@ -277,11 +277,11 @@ components:
         makerName:
           type: string
         price:
-          type: string
+          type: number
         officialPrice:
-          type: string
+          type: number
         couponPrice:
-          type: string
+          type: number
           nullable: true
         pricePrefix:
           type: string
@@ -317,9 +317,9 @@ components:
           type: string
           nullable: true
         price:
-          type: string
+          type: number
         officialPrice:
-          type: string
+          type: number
         pricePrefix:
           type: string
         priceSuffix:
@@ -381,7 +381,7 @@ components:
           items:
             type: string
         price:
-          type: string
+          type: number
         pricePrefix:
           type: string
         priceSuffix:
@@ -409,9 +409,9 @@ components:
         category:
           type: string
         price:
-          type: string
+          type: number
         officialPrice:
-          type: string
+          type: number
       required:
         - productId
         - name
