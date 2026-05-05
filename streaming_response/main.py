@@ -381,7 +381,7 @@ def create_prompt(character_item, usecase, payload):
                 for work in payload.circle_announce_work_list
             )
 
-            if announce_work_list is not None:
+            if payload.circle_announce_work_list:
                 announce_line = (
                     f"---\n\n発売予告作品\n\n{announce_work_list}\n\n---\n\n"
                 )
