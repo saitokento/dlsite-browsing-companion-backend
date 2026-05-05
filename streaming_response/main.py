@@ -240,11 +240,13 @@ def get_api_keys():
         ) from e
 
 
-environment = os.getenv("ENVIRONMENT", "Prod")
-if environment == "Dev":
-    logging.basicConfig(level=logging.DEBUG)
-
 logger = logging.getLogger(__name__)
+
+environment = os.getenv("ENVIRONMENT", "Prod")
+log_level = logging.DEBUG if environment == "Dev" else logging.INFO
+
+logging.getLogger().setLevel(log_level)
+logger.setLevel(log_level)
 
 table_name = os.getenv("TABLE_NAME", "dbc")
 dynamodb = boto3.resource("dynamodb")
