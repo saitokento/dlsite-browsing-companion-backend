@@ -240,6 +240,10 @@ def get_api_keys():
         ) from e
 
 
+environment = os.getenv("ENVIRONMENT", "Prod")
+if environment == "Dev":
+    logging.basicConfig(level=logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 
 table_name = os.getenv("TABLE_NAME", "dbc")
@@ -509,7 +513,7 @@ async def index(body: AskRequest):
             status_code=500,
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
-    print(prompt)
+    logger.debug(prompt)
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
