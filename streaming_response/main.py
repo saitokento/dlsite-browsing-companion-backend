@@ -319,13 +319,23 @@ def get_character_item(character_id: str):
         return item
 
 
-def get_prompt_template(prompts, key: str, character_item):
+def get_prompt_template(
+    prompts,
+    key: str,
+    character_item,
+    default_prompts=None,
+):
     prompt_template = prompts.get(key)
+
+    if not prompt_template and default_prompts is not None:
+        prompt_template = default_prompts.get(key)
+
     if not prompt_template:
         raise HTTPException(
             status_code=500,
-            detail=f"'prompts.{key}' not found for character '{character_item.get('character_id')}' in DynamoDB",
+            detail=f"'prompts.{key}' not found for character '{character_item.get('character_id')}' or default character in DynamoDB",
         )
+
     return prompt_template
 
 
@@ -340,11 +350,13 @@ def format_labels(labels: list[str]):
     return "、" + "、".join(labels)
 
 
-def create_prompt(character_item, usecase, payload):
+def create_prompt(character_item, usecase, payload, default_prompts=None):
     prompts = character_item.get("prompts") or {}
     match usecase:
         case Usecase.WORK:
-            prompt_template = get_prompt_template(prompts, "work", character_item)
+            prompt_template = get_prompt_template(
+                prompts, "work", character_item, default_prompts
+            )
 
             if payload.work.coupon_price is not None:
                 coupon_line = f"\nクーポン利用価格: {payload.work.price_prefix}{payload.work.coupon_price}{payload.work.price_suffix}"
@@ -366,17 +378,24 @@ def create_prompt(character_item, usecase, payload):
             )
 
         case Usecase.HOME_HELLO:
-            prompt_template = get_prompt_template(prompts, "home:hello", character_item)
+            prompt_template = get_prompt_template(
+                prompts, "home:hello", character_item, default_prompts
+            )
 
             return prompt_template.format(floor=payload.floor)
 
         case Usecase.CIRCLE_NEW:
-            prompt_template = get_prompt_template(prompts, "circle:new", character_item)
+            prompt_template = get_prompt_template(
+                prompts, "circle:new", character_item, default_prompts
+            )
             announce_work_list_template = get_prompt_template(
-                prompts, "circle:new:announce_work_list", character_item
+                prompts,
+                "circle:new:announce_work_list",
+                character_item,
+                default_prompts,
             )
             work_list_template = get_prompt_template(
-                prompts, "circle:new:work_list", character_item
+                prompts, "circle:new:work_list", character_item, default_prompts
             )
 
             announce_work_list = "\n\n".join(
@@ -423,10 +442,10 @@ def create_prompt(character_item, usecase, payload):
 
         case Usecase.USERBUY_PAGE1:
             prompt_template = get_prompt_template(
-                prompts, "userbuy:page1", character_item
+                prompts, "userbuy:page1", character_item, default_prompts
             )
             work_list_template = get_prompt_template(
-                prompts, "userbuy:page1:work_list", character_item
+                prompts, "userbuy:page1:work_list", character_item, default_prompts
             )
 
             work_list = "\n\n".join(
@@ -445,9 +464,11 @@ def create_prompt(character_item, usecase, payload):
             return prompt_template.format(work_list=work_list)
 
         case Usecase.CART_LIST:
-            prompt_template = get_prompt_template(prompts, "cart:list", character_item)
+            prompt_template = get_prompt_template(
+                prompts, "cart:list", character_item, default_prompts
+            )
             work_list_template = get_prompt_template(
-                prompts, "cart:list:work_list", character_item
+                prompts, "cart:list:work_list", character_item, default_prompts
             )
 
             work_list = "\n\n".join(
@@ -478,10 +499,10 @@ def create_prompt(character_item, usecase, payload):
 
         case Usecase.DOWNLOAD_LIST:
             prompt_template = get_prompt_template(
-                prompts, "download:list", character_item
+                prompts, "download:list", character_item, default_prompts
             )
             work_list_template = get_prompt_template(
-                prompts, "download:list:work_list", character_item
+                prompts, "download:list:work_list", character_item, default_prompts
             )
 
             work_list = "\n\n".join(
@@ -513,13 +534,30 @@ async def index(body: AskRequest):
                 status_code=500, detail="'default' character not found in DynamoDB"
             )
 
-    prompt = create_prompt(character_item, body.usecase, body.payload)
+    default_prompts = None
+    if character_id != CharacterId.DEFAULT:
+        default_character_item = get_character_item(CharacterId.DEFAULT)
+        if default_character_item is None:
+            raise HTTPException(
+                status_code=500,
+                detail="'default' character not found in DynamoDB",
+            )
+        default_prompts = default_character_item.get("prompts") or {}
+
+    prompt = create_prompt(
+        character_item,
+        body.usecase,
+        body.payload,
+        default_prompts,
+    )
+
     instructions = character_item.get("instructions")
     if not instructions:
         raise HTTPException(
             status_code=500,
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
+
     logger.debug(prompt)
 
     # return StreamingResponse(
