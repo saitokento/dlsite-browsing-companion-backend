@@ -135,36 +135,42 @@ class WorkRequest(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 class HomeHelloRequest(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.HOME_HELLO]
     payload: HomeHelloPayload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 class CircleNewRequest(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.CIRCLE_NEW]
     payload: CircleNewPayload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 class UserbuyPage1Request(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.USERBUY_PAGE1]
     payload: UserbuyPage1Payload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 class CartListRequest(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.CART_LIST]
     payload: CartListPayload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 class DownloadListRequest(ApiModel):
     character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.DOWNLOAD_LIST]
     payload: DownloadListPayload
+    debug_mode: bool = Field(alias="debugMode")
 
 
 AskRequest = Annotated[
@@ -242,12 +248,6 @@ def get_api_keys():
 
 
 logger = logging.getLogger(__name__)
-
-environment = os.getenv("ENVIRONMENT", "prod").strip().lower()
-log_level = logging.DEBUG if environment == "dev" else logging.INFO
-
-logging.getLogger().setLevel(log_level)
-logger.setLevel(log_level)
 
 table_name = os.getenv("TABLE_NAME", "dbc")
 dynamodb = boto3.resource("dynamodb")
@@ -554,7 +554,8 @@ async def index(body: AskRequest):
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
 
-    logger.debug(prompt)
+    if body.debug_mode:
+        print(f"prompt:\n{prompt}")
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
