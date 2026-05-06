@@ -19,10 +19,6 @@ class ApiModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
-class CharacterId(StrEnum):
-    DEFAULT = "default"
-
-
 class Usecase(StrEnum):
     WORK = "work"
     HOME_HELLO = "home:hello"
@@ -136,37 +132,37 @@ class DownloadListPayload(ApiModel):
 
 
 class WorkRequest(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
 class HomeHelloRequest(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.HOME_HELLO]
     payload: HomeHelloPayload
 
 
 class CircleNewRequest(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.CIRCLE_NEW]
     payload: CircleNewPayload
 
 
 class UserbuyPage1Request(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.USERBUY_PAGE1]
     payload: UserbuyPage1Payload
 
 
 class CartListRequest(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.CART_LIST]
     payload: CartListPayload
 
 
 class DownloadListRequest(ApiModel):
-    character_id: CharacterId = Field(alias="characterId")
+    character_id: str = Field(alias="characterId")
     usecase: Literal[Usecase.DOWNLOAD_LIST]
     payload: DownloadListPayload
 
@@ -522,12 +518,12 @@ async def index(body: AskRequest):
     character_id = body.character_id
     character_item = get_character_item(character_id)
     if character_item is None:
-        if character_id != CharacterId.DEFAULT:
+        if character_id != "default":
             logger.warning(
                 "Character '%s' not found, falling back to 'default'",
                 character_id,
             )
-            character_id = CharacterId.DEFAULT
+            character_id = "default"
             character_item = get_character_item(character_id)
         if character_item is None:
             raise HTTPException(
@@ -535,8 +531,8 @@ async def index(body: AskRequest):
             )
 
     default_prompts = None
-    if character_id != CharacterId.DEFAULT:
-        default_character_item = get_character_item(CharacterId.DEFAULT)
+    if character_id != "default":
+        default_character_item = get_character_item("default")
         if default_character_item is None:
             raise HTTPException(
                 status_code=500,

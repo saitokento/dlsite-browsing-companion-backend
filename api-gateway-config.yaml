@@ -76,7 +76,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["home:hello"]
@@ -93,7 +92,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["work"]
@@ -110,7 +108,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["circle:new"]
@@ -127,7 +124,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["userbuy:page1"]
@@ -144,7 +140,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["cart:list"]
@@ -161,7 +156,6 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["download:list"]
