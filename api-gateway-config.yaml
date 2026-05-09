@@ -76,16 +76,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["home:hello"]
         payload:
           $ref: "#/components/schemas/HomeHelloPayload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     WorkRequest:
       type: object
@@ -93,16 +95,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["work"]
         payload:
           $ref: "#/components/schemas/WorkPayload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     CircleNewRequest:
       type: object
@@ -110,16 +114,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["circle:new"]
         payload:
           $ref: "#/components/schemas/CircleNewPayload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     UserbuyPage1Request:
       type: object
@@ -127,16 +133,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["userbuy:page1"]
         payload:
           $ref: "#/components/schemas/UserbuyPage1Payload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     CartListRequest:
       type: object
@@ -144,16 +152,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["cart:list"]
         payload:
           $ref: "#/components/schemas/CartListPayload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     DownloadListRequest:
       type: object
@@ -161,16 +171,18 @@ components:
       properties:
         characterId:
           type: string
-          enum: ["default"]
         usecase:
           type: string
           enum: ["download:list"]
         payload:
           $ref: "#/components/schemas/DownloadListPayload"
+        debugMode:
+          type: boolean
       required:
         - characterId
         - usecase
         - payload
+        - debugMode
 
     HomeHelloPayload:
       type: object
