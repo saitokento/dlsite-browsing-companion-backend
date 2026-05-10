@@ -326,17 +326,17 @@ async def _stream_xai_chat_once(
             + "\n"
         )
 
-        if response_id is not None:
-            yield (
-                json.dumps(
-                    {
-                        "type": "done",
-                        "responseId": response_id,
-                    },
-                    ensure_ascii=False,
-                )
-                + "\n"
+    if response_id is not None:
+        yield (
+            json.dumps(
+                {
+                    "type": "done",
+                    "responseId": response_id,
+                },
+                ensure_ascii=False,
             )
+            + "\n"
+        )
 
 
 async def xai_streamer(
