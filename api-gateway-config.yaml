@@ -83,6 +83,9 @@ components:
           $ref: "#/components/schemas/HomeHelloPayload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
@@ -102,6 +105,9 @@ components:
           $ref: "#/components/schemas/WorkPayload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
@@ -121,6 +127,9 @@ components:
           $ref: "#/components/schemas/CircleNewPayload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
@@ -140,6 +149,9 @@ components:
           $ref: "#/components/schemas/UserbuyPage1Payload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
@@ -159,6 +171,9 @@ components:
           $ref: "#/components/schemas/CartListPayload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
@@ -178,6 +193,9 @@ components:
           $ref: "#/components/schemas/DownloadListPayload"
         debugMode:
           type: boolean
+        previousResponseId:
+          type: string
+          nullable: true
       required:
         - characterId
         - usecase
