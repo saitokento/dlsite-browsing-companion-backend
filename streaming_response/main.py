@@ -295,7 +295,18 @@ async def xai_streamer(prompt: str, instructions: str):
     chat.append(user(prompt))
 
     async for _response, chunk in chat.stream():
-        yield chunk.content
+        if not chunk.content:
+            continue
+        yield (
+            json.dumps(
+                {
+                    "type": "delta",
+                    "text": chunk.content,
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
 
 
 def get_character_item(character_id: str):
@@ -561,5 +572,6 @@ async def index(body: AskRequest):
     #     openai_streamer(prompt, instructions), media_type="text/plain"
     # )
     return StreamingResponse(
-        xai_streamer(prompt, instructions), media_type="text/plain"
+        xai_streamer(prompt, instructions),
+        media_type="application/x-ndjson",
     )

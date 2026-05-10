@@ -30,7 +30,7 @@ paths:
         "200":
           description: "Streaming response from agent"
           content:
-            text/plain:
+            application/x-ndjson:
               schema:
                 type: string
       x-amazon-apigateway-integration:
