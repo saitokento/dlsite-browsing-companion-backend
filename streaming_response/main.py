@@ -23,7 +23,6 @@ class ApiModel(BaseModel):
 
 class ChatRequestBase(ApiModel):
     character_id: str = Field(alias="characterId")
-    debug_mode: bool = Field(alias="debugMode")
     previous_response_id: str | None = Field(
         default=None,
         alias="previousResponseId",
@@ -624,9 +623,6 @@ async def index(body: AskRequest):
             status_code=500,
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
-
-    if body.debug_mode:
-        print(f"prompt:\n{prompt}")
 
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
