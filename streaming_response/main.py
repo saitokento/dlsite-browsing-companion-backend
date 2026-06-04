@@ -10,6 +10,8 @@ from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from grpc import StatusCode
+from grpc.aio import AioRpcError
 from pydantic import BaseModel, ConfigDict, Field
 from xai_sdk import AsyncClient
 from xai_sdk.chat import system, user
@@ -17,6 +19,15 @@ from xai_sdk.chat import system, user
 
 class ApiModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+
+class ChatRequestBase(ApiModel):
+    character_id: str = Field(alias="characterId")
+    debug_mode: bool = Field(alias="debugMode")
+    previous_response_id: str | None = Field(
+        default=None,
+        alias="previousResponseId",
+    )
 
 
 class Usecase(StrEnum):
@@ -131,46 +142,34 @@ class DownloadListPayload(ApiModel):
 #     pass
 
 
-class WorkRequest(ApiModel):
-    character_id: str = Field(alias="characterId")
+class WorkRequest(ChatRequestBase):
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
-    debug_mode: bool = Field(alias="debugMode")
 
 
-class HomeHelloRequest(ApiModel):
-    character_id: str = Field(alias="characterId")
+class HomeHelloRequest(ChatRequestBase):
     usecase: Literal[Usecase.HOME_HELLO]
     payload: HomeHelloPayload
-    debug_mode: bool = Field(alias="debugMode")
 
 
-class CircleNewRequest(ApiModel):
-    character_id: str = Field(alias="characterId")
+class CircleNewRequest(ChatRequestBase):
     usecase: Literal[Usecase.CIRCLE_NEW]
     payload: CircleNewPayload
-    debug_mode: bool = Field(alias="debugMode")
 
 
-class UserbuyPage1Request(ApiModel):
-    character_id: str = Field(alias="characterId")
+class UserbuyPage1Request(ChatRequestBase):
     usecase: Literal[Usecase.USERBUY_PAGE1]
     payload: UserbuyPage1Payload
-    debug_mode: bool = Field(alias="debugMode")
 
 
-class CartListRequest(ApiModel):
-    character_id: str = Field(alias="characterId")
+class CartListRequest(ChatRequestBase):
     usecase: Literal[Usecase.CART_LIST]
     payload: CartListPayload
-    debug_mode: bool = Field(alias="debugMode")
 
 
-class DownloadListRequest(ApiModel):
-    character_id: str = Field(alias="characterId")
+class DownloadListRequest(ChatRequestBase):
     usecase: Literal[Usecase.DOWNLOAD_LIST]
     payload: DownloadListPayload
-    debug_mode: bool = Field(alias="debugMode")
 
 
 AskRequest = Annotated[
@@ -288,14 +287,86 @@ xai_client = AsyncClient(api_key=XAI_API_KEY)
 #             yield event.delta
 
 
-async def xai_streamer(prompt: str, instructions: str):
-    chat = xai_client.chat.create(
-        model="grok-4-1-fast-non-reasoning", messages=[system(instructions)]
-    )
+async def _stream_xai_chat_once(
+    prompt: str, instructions: str, previous_response_id: str | None
+):
+    if previous_response_id is not None:
+        chat = xai_client.chat.create(
+            model="grok-4-1-fast-non-reasoning",
+            previous_response_id=previous_response_id,
+            store_messages=True,
+        )
+    else:
+        chat = xai_client.chat.create(
+            model="grok-4-1-fast-non-reasoning",
+            messages=[system(instructions)],
+            store_messages=True,
+        )
+
     chat.append(user(prompt))
 
-    async for _response, chunk in chat.stream():
-        yield chunk.content
+    response_id: str | None = None
+
+    async for response, chunk in chat.stream():
+        current_response_id = getattr(response, "id", None)
+        if isinstance(current_response_id, str):
+            response_id = current_response_id
+
+        if not chunk.content:
+            continue
+
+        yield (
+            json.dumps(
+                {
+                    "type": "delta",
+                    "text": chunk.content,
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
+
+    yield (
+        json.dumps(
+            {
+                "type": "done",
+                "responseId": response_id,
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
+
+
+async def xai_streamer(
+    prompt: str,
+    instructions: str,
+    previous_response_id: str | None,
+):
+    try:
+        async for line in _stream_xai_chat_once(
+            prompt,
+            instructions,
+            previous_response_id,
+        ):
+            yield line
+
+    except AioRpcError as err:
+        if err.code() == StatusCode.NOT_FOUND and previous_response_id is not None:
+            logger.warning(
+                "previous_response_id %s was not found. Starting a new chat.",
+                previous_response_id,
+            )
+
+            async for line in _stream_xai_chat_once(
+                prompt,
+                instructions,
+                None,
+            ):
+                yield line
+            return
+
+        raise
 
 
 def get_character_item(character_id: str):
@@ -561,5 +632,10 @@ async def index(body: AskRequest):
     #     openai_streamer(prompt, instructions), media_type="text/plain"
     # )
     return StreamingResponse(
-        xai_streamer(prompt, instructions), media_type="text/plain"
+        xai_streamer(
+            prompt,
+            instructions,
+            body.previous_response_id,
+        ),
+        media_type="application/x-ndjson",
     )
