@@ -1,13 +1,14 @@
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal, Union
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from grpc import StatusCode
@@ -306,7 +307,19 @@ table_name = os.getenv("TABLE_NAME", "dbc")
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(table_name)
 
-app = FastAPI()
+# OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
+XAI_API_KEY = get_api_keys()
+
+
+# openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncClient(api_key=XAI_API_KEY) as client:
+        app.state.xai_client = client
+        yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -315,13 +328,6 @@ app.add_middleware(
     allow_methods=["OPTIONS", "POST"],
     allow_headers=["Content-Type", "X-Amz-Date", "X-Api-Key"],
 )
-
-# OPENAI_API_KEY, XAI_API_KEY = get_api_keys()
-XAI_API_KEY = get_api_keys()
-
-# openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-xai_client = AsyncClient(api_key=XAI_API_KEY)
-
 
 # async def openai_streamer(prompt: str, instructions: str):
 #     stream = await openai_client.responses.create(
@@ -342,7 +348,10 @@ xai_client = AsyncClient(api_key=XAI_API_KEY)
 
 
 async def _stream_xai_chat_once(
-    prompt: str, instructions: str, previous_response_id: str | None
+    xai_client: AsyncClient,
+    prompt: str,
+    instructions: str,
+    previous_response_id: str | None,
 ):
     if previous_response_id is not None:
         chat = xai_client.chat.create(
@@ -393,6 +402,7 @@ async def _stream_xai_chat_once(
 
 
 async def xai_streamer(
+    xai_client: AsyncClient,
     prompt: str,
     instructions: str,
     previous_response_id: str | None,
@@ -415,6 +425,7 @@ async def xai_streamer(
 
     try:
         async for line in _stream_xai_chat_once(
+            xai_client,
             prompt,
             instructions,
             previous_response_id,
@@ -429,6 +440,7 @@ async def xai_streamer(
             )
 
             async for line in _stream_xai_chat_once(
+                xai_client,
                 prompt,
                 instructions,
                 None,
@@ -717,7 +729,7 @@ def create_prompt(character_item, usecase, payload, default_prompts=None):
 
 
 @app.post("/ask")
-async def index(body: AskRequest):
+async def index(request: Request, body: AskRequest):
     """コメント生成リクエストを受け付け、AIの応答をストリーミングで返す
 
     指定されたキャラクターが存在しない場合は``default``へフォールバックし、
@@ -773,11 +785,14 @@ async def index(body: AskRequest):
             detail=f"'instructions' not found for character '{character_id}' in DynamoDB",
         )
 
+    xai_client: AsyncClient = request.app.state.xai_client
+
     # return StreamingResponse(
     #     openai_streamer(prompt, instructions), media_type="text/plain"
     # )
     return StreamingResponse(
         xai_streamer(
+            xai_client,
             prompt,
             instructions,
             body.previous_response_id,
