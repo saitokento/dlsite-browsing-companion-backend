@@ -81,8 +81,6 @@ components:
           enum: ["home:hello"]
         payload:
           $ref: "#/components/schemas/HomeHelloPayload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -90,7 +88,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     WorkRequest:
       type: object
@@ -103,8 +101,6 @@ components:
           enum: ["work"]
         payload:
           $ref: "#/components/schemas/WorkPayload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -112,7 +108,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     CircleNewRequest:
       type: object
@@ -125,8 +121,6 @@ components:
           enum: ["circle:new"]
         payload:
           $ref: "#/components/schemas/CircleNewPayload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -134,7 +128,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     UserbuyPage1Request:
       type: object
@@ -147,8 +141,6 @@ components:
           enum: ["userbuy:page1"]
         payload:
           $ref: "#/components/schemas/UserbuyPage1Payload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -156,7 +148,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     CartListRequest:
       type: object
@@ -169,8 +161,6 @@ components:
           enum: ["cart:list"]
         payload:
           $ref: "#/components/schemas/CartListPayload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -178,7 +168,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     DownloadListRequest:
       type: object
@@ -191,8 +181,6 @@ components:
           enum: ["download:list"]
         payload:
           $ref: "#/components/schemas/DownloadListPayload"
-        debugMode:
-          type: boolean
         previousResponseId:
           type: string
           nullable: true
@@ -200,7 +188,7 @@ components:
         - characterId
         - usecase
         - payload
-        - debugMode
+        - previousResponseId
 
     HomeHelloPayload:
       type: object
