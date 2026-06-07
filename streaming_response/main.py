@@ -30,10 +30,7 @@ class ChatRequestBase(ApiModel):
     """チャットリクエストに共通するフィールドを表すモデル"""
 
     character_id: str = Field(alias="characterId")
-    previous_response_id: str | None = Field(
-        default=None,
-        alias="previousResponseId",
-    )
+    previous_response_id: str | None = Field(alias="previousResponseId")
 
 
 class Usecase(StrEnum):

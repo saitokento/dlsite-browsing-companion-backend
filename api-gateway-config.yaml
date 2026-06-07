@@ -88,6 +88,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     WorkRequest:
       type: object
@@ -107,6 +108,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     CircleNewRequest:
       type: object
@@ -126,6 +128,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     UserbuyPage1Request:
       type: object
@@ -145,6 +148,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     CartListRequest:
       type: object
@@ -164,6 +168,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     DownloadListRequest:
       type: object
@@ -183,6 +188,7 @@ components:
         - characterId
         - usecase
         - payload
+        - previousResponseId
 
     HomeHelloPayload:
       type: object
