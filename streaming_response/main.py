@@ -20,7 +20,7 @@ from xai_sdk.chat import system, user
 class ApiModel(BaseModel):
     """APIで利用するPydanticモデルの共通基底クラス
 
-    （フィールド名のエイリアスによる入力を許可、未定義フィールドを拒否）
+    (フィールド名のエイリアスによる入力を許可、未定義フィールドを拒否)
     """
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
