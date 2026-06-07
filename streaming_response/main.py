@@ -18,10 +18,17 @@ from xai_sdk.chat import system, user
 
 
 class ApiModel(BaseModel):
+    """APIで利用するPydanticモデルの共通基底クラス
+
+    （フィールド名のエイリアスによる入力を許可、未定義フィールドを拒否）
+    """
+
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class ChatRequestBase(ApiModel):
+    """チャットリクエストに共通するフィールドを表すモデル"""
+
     character_id: str = Field(alias="characterId")
     previous_response_id: str | None = Field(
         default=None,
@@ -30,6 +37,8 @@ class ChatRequestBase(ApiModel):
 
 
 class Usecase(StrEnum):
+    """プロンプト生成処理を切り替えるusecase"""
+
     WORK = "work"
     HOME_HELLO = "home:hello"
     CIRCLE_NEW = "circle:new"
@@ -39,6 +48,8 @@ class Usecase(StrEnum):
 
 
 class Work(ApiModel):
+    """作品ページの作品情報"""
+
     name: str
     maker_name: str = Field(alias="makerName")
     price: Decimal
@@ -51,6 +62,8 @@ class Work(ApiModel):
 
 
 class CircleWork(ApiModel):
+    """サークルページの販売中作品の作品情報"""
+
     product_id: str = Field(alias="productId")
     category: str
     name: str
@@ -63,6 +76,8 @@ class CircleWork(ApiModel):
 
 
 class CircleAnnounceWork(ApiModel):
+    """サークルページの発売予告作品の作品情報"""
+
     product_id: str = Field(alias="productId")
     name: str
     author: str | None
@@ -72,6 +87,8 @@ class CircleAnnounceWork(ApiModel):
 
 
 class UserbuyWork(ApiModel):
+    """購入履歴の作品情報"""
+
     product_id: str = Field(alias="productId")
     buy_date: str = Field(alias="buyDate")
     name: str
@@ -83,6 +100,8 @@ class UserbuyWork(ApiModel):
 
 
 class CartWork(ApiModel):
+    """カート内の作品情報"""
+
     product_id: str = Field(alias="productId")
     name: str
     maker_name: str = Field(alias="makerName")
@@ -92,6 +111,8 @@ class CartWork(ApiModel):
 
 
 class DownloadWork(ApiModel):
+    """購入後ページの作品情報。"""
+
     product_id: str = Field(alias="productId")
     name: str
     maker_name: str = Field(alias="makerName")
@@ -99,14 +120,20 @@ class DownloadWork(ApiModel):
 
 
 class HomeHelloPayload(ApiModel):
+    """トップページでのコメント生成に使用するペイロード"""
+
     floor: str
 
 
 class WorkPayload(ApiModel):
+    """作品ページでのコメント生成に使用するペイロード"""
+
     work: Work
 
 
 class CircleNewPayload(ApiModel):
+    """サークルページでのコメント生成に使用するペイロード"""
+
     maker_name: str = Field(alias="makerName")
     circle_announce_work_list: list[CircleAnnounceWork] = Field(
         alias="circleAnnounceWorkList", max_length=100
@@ -115,6 +142,8 @@ class CircleNewPayload(ApiModel):
 
 
 class UserbuyPage1Payload(ApiModel):
+    """購入履歴ページでのコメント生成に使用するペイロード"""
+
     userbuy_work_list: list[UserbuyWork] = Field(
         alias="userbuyWorkList",
         max_length=100,  # 拡張機能側での購入履歴管理を実装したら増やすことも検討
@@ -122,6 +151,8 @@ class UserbuyPage1Payload(ApiModel):
 
 
 class CartListPayload(ApiModel):
+    """カートページでのコメント生成に使用するペイロード"""
+
     cart_work_list: list[CartWork] = Field(alias="cartWorkList", max_length=100)
     total_discount: Decimal = Field(alias="totalDiscount")
     total_original: Decimal | None = Field(alias="totalOriginal")
@@ -132,6 +163,8 @@ class CartListPayload(ApiModel):
 
 
 class DownloadListPayload(ApiModel):
+    """購入後ページでのコメント生成に使用するペイロード"""
+
     download_work_list: list[DownloadWork] = Field(
         alias="downloadWorkList", max_length=100
     )
@@ -142,31 +175,43 @@ class DownloadListPayload(ApiModel):
 
 
 class WorkRequest(ChatRequestBase):
+    """作品ページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.WORK]
     payload: WorkPayload
 
 
 class HomeHelloRequest(ChatRequestBase):
+    """トップページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.HOME_HELLO]
     payload: HomeHelloPayload
 
 
 class CircleNewRequest(ChatRequestBase):
+    """サークルページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.CIRCLE_NEW]
     payload: CircleNewPayload
 
 
 class UserbuyPage1Request(ChatRequestBase):
+    """購入履歴ページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.USERBUY_PAGE1]
     payload: UserbuyPage1Payload
 
 
 class CartListRequest(ChatRequestBase):
+    """カートページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.CART_LIST]
     payload: CartListPayload
 
 
 class DownloadListRequest(ChatRequestBase):
+    """購入後ページ用のチャットリクエスト"""
+
     usecase: Literal[Usecase.DOWNLOAD_LIST]
     payload: DownloadListPayload
 
@@ -185,6 +230,19 @@ AskRequest = Annotated[
 
 
 def get_api_keys():
+    """AWS Secrets ManagerからxAI APIキーを取得する
+
+    環境変数``SECRETS_NAME``で取得対象のシークレット名を指定できる
+    未指定の場合は``prod/DBC/APIKeys``を使用する
+
+    Returns:
+        str: シークレット内の``XAI_API_KEY``
+
+    Raises:
+        RuntimeError: Secrets Managerからシークレットを取得できなかった場合
+        ValueError: シークレットが文字列形式でない、JSONとして不正、または``XAI_API_KEY``が含まれていない場合
+    """
+
     secret_name = os.getenv("SECRETS_NAME", "prod/DBC/APIKeys")
 
     session = boto3.session.Session()
@@ -342,6 +400,22 @@ async def xai_streamer(
     instructions: str,
     previous_response_id: str | None,
 ):
+    """xAIのチャット生成を実行し、応答をNDJSON形式でストリーミングする
+
+    前回のレスポンスIDが見つからない場合は新規チャットを作成する
+
+    Args:
+        prompt: 送信するプロンプト
+        instructions: 新規チャット時に設定するシステム指示
+        previous_response_id: 前回のレスポンスID。新規チャットでは``None``
+
+    Yields:
+        str: テキスト差分を表す``delta``行と、完了時の``done``行
+
+    Raises:
+        AioRpcError: 前回のレスポンスIDが見つからない以外のgRPCエラーが発生した場合。
+    """
+
     try:
         async for line in _stream_xai_chat_once(
             prompt,
@@ -369,6 +443,18 @@ async def xai_streamer(
 
 
 def get_character_item(character_id: str):
+    """DynamoDBから指定されたキャラクターのシステム指示・プロンプトテンプレートを取得する
+
+    Args:
+        character_id: 取得するキャラクターのID
+
+    Returns:
+        dict | None: キャラクターのシステム指示・プロンプトテンプレート。該当項目がない場合は``None``
+
+    Raises:
+        ClientError: DynamoDBへのアクセスに失敗した場合
+    """
+
     try:
         response = table.get_item(Key={"character_id": character_id})
     except ClientError as err:
@@ -391,6 +477,23 @@ def get_prompt_template(
     character_item,
     default_prompts=None,
 ):
+    """指定キーのプロンプトテンプレートを取得する
+
+    キャラクター固有のテンプレートがない場合は、"default"のテンプレートへフォールバックする
+
+    Args:
+        prompts: キャラクター固有のプロンプトテンプレート一覧
+        key: 取得するテンプレートのキー
+        character_item: キャラクターのシステム指示・プロンプトテンプレート
+        default_prompts: フォールバック先の"default"のプロンプトテンプレート
+
+    Returns:
+        str: 見つかったプロンプトテンプレート
+
+    Raises:
+        HTTPException: キャラクター固有・"default"のどちらにもテンプレートがない場合
+    """
+
     prompt_template = prompts.get(key)
 
     if not prompt_template and default_prompts is not None:
@@ -406,10 +509,28 @@ def get_prompt_template(
 
 
 def quote_markdown(markdown: str) -> str:
+    """Markdownテキストの各行を引用形式へ変換する
+
+    Args:
+        markdown: 引用形式へ変換するMarkdown文字列
+
+    Returns:
+        str: 各行の先頭に``> ``を付けた文字列。
+    """
+
     return "\n".join(f"> {line}" for line in markdown.splitlines())
 
 
 def format_labels(labels: list[str]):
+    """ラベル一覧を読点区切りの表示用文字列へ整形する
+
+    Args:
+        labels: 整形対象のラベル一覧
+
+    Returns:
+        str: 先頭に読点を付けたラベル文字列。空の一覧では空文字列
+    """
+
     if not labels:
         return ""
 
@@ -417,6 +538,21 @@ def format_labels(labels: list[str]):
 
 
 def create_prompt(character_item, usecase, payload, default_prompts=None):
+    """usecaseとペイロードからAIへ渡すプロンプトを作成する
+
+    Args:
+        character_item: 使用するシステム指示・プロンプトテンプレート
+        usecase: プロンプトの種類を示すusecase
+        payload: usecaseに対応する入力データ
+        default_prompts: フォールバック先の"default"のプロンプトテンプレート
+
+    Returns:
+        str: テンプレートに入力データを埋め込んだプロンプト
+
+    Raises:
+        HTTPException: 必要なプロンプトテンプレートが見つからない場合
+    """
+
     prompts = character_item.get("prompts") or {}
     match usecase:
         case Usecase.WORK:
@@ -585,6 +721,22 @@ def create_prompt(character_item, usecase, payload, default_prompts=None):
 
 @app.post("/ask")
 async def index(body: AskRequest):
+    """コメント生成リクエストを受け付け、AIの応答をストリーミングで返す
+
+    指定されたキャラクターが存在しない場合は``default``へフォールバックし、
+    リクエストのusecaseに応じたプロンプトを生成する
+
+    Args:
+        body: usecaseで判別されるチャットリクエスト
+
+    Returns:
+        StreamingResponse: ``application/x-ndjson``形式のストリーミングレスポンス
+
+    Raises:
+        HTTPException: "default"キャラクター、システム指示、または必要なプロンプトテンプレートが
+            DynamoDBに存在しない場合。
+    """
+
     character_id = body.character_id
     character_item = get_character_item(character_id)
     if character_item is None:
